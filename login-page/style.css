@@ -220,3 +220,10 @@
     filter: blur(30px);
     z-index: 0;          /* make sure it’s above background but below content if needed */
 }
+
+#selected-menu{
+  color: #1c86ee;
+}
+#selected-menu:hover   {
+  color: white;
+}
