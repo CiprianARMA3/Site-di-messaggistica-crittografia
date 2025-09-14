@@ -1,0 +1,166 @@
+ * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: "Nunito Sans", sans-serif;
+      color: white;
+      background-color: rgb(21, 20, 20);
+      overflow: hidden
+    }
+
+    .layout {
+      display: grid;
+      grid:
+        "header" auto
+        "main" 1fr
+        "footer" auto
+        / 1fr;
+      gap: 8px;
+      height: 100vh;
+    }
+
+    .header {
+      grid-area: header;
+      background-color: /* rgb(21, 20, 20);rgb(49, 47, 47) vecchi valori */ transparent;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+      font-size: 1.5rem;
+      font-weight: bold;
+      padding: 1rem;
+      gap: 1rem;
+      position: relative;   
+      z-index: 1;
+    }
+
+    .main {
+      grid-area: main;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: visible;
+      position: relative;
+
+    }
+
+    /* Form container */
+    .main form {
+      background-color: rgb(40, 40, 40);
+      padding: 2rem;
+      border-radius: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-width: 300px;
+      width: 100%;
+      box-shadow: 
+          0 0 200px 50px rgba(255, 255, 255, 0.15), /* outer glow */
+          rgba(255, 255, 255, 0.06) 0px -10px 40px 0px inset,  /* softer, higher blur */
+          rgba(255, 255, 255, 0.05) 0px -20px 60px 0px inset, 
+          rgba(255, 255, 255, 0.03) 0px -40px 100px 0px inset,
+          rgba(255, 255, 255, 0.04) 0px 2px 1px,
+          rgba(255, 255, 255, 0.05) 0px 4px 2px,
+          rgba(255, 255, 255, 0.05) 0px 8px 4px,
+          rgba(255, 255, 255, 0.05) 0px 16px 8px,
+          rgba(255, 255, 255, 0.05) 0px 32px 16px;
+      position: relative;
+          }
+
+    /* Input fields */
+    input[type="text"], input[type="password"] {
+      padding: 0.5rem;
+      border-radius: 8px;
+      border: none;
+      font-size: 1rem;
+    }
+
+    /* Button */
+    #accedere-box {
+      padding: 0.5rem;
+      border-radius: 10px;
+      border: none;
+      background-color: #1e90ff;
+      color: white;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.2s;
+    }
+
+    #accedere-box:hover {
+      background-color: #1c86ee;
+    }
+
+
+    a {
+      color: #1e90ff;
+      text-decoration: none;
+      font-size: 0.9rem;
+      align-self: flex-start;
+
+    }
+
+    a:hover {
+      color: #63b3ed;
+    }
+
+
+    .footer {
+      grid-area: footer;
+      background-color: rgb(49, 47, 47);
+      display: flex;
+      justify-content:space-between;
+      padding: 1rem;
+      font-size: 0.9rem;
+      overflow: hidden;
+      position: relative;
+      z-index: 5;
+    }
+    
+.header .logo {
+  height: 50px;
+  width: auto;
+  opacity: 0.5;
+  position: absolute;               
+  left: 1rem;                  
+}
+.toggle-password {
+    cursor: pointer;
+    color: #a0a0a0;
+    font-size: 0.9rem;
+}
+.footer-logos{
+    height: 30px;
+    width: auto;
+    margin-left: 50px;
+}
+
+.logo-immagine {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-40%, -50%) rotate(10deg) skewY(0deg); /* rotate right */
+    font-size: 18rem;   /* slightly smaller to fit fully */
+    font-weight: 900;
+    color: rgba(0,0,0,0.05);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.7;
+    height: 100vh;
+}
+
+.logo-container {
+    position: absolute;
+    top: 50%;
+    left: 85%;
+    transform: translate(-40%, -30%) rotate(-10deg) skewY(0deg); /* rotate right */
+    font-size: 18rem;   /* visually large */
+    font-weight: 900;
+    color: rgba(0,0,0,0.05);
+    pointer-events: none;
+    z-index: 0;
+}
