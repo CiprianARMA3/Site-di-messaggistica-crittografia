@@ -128,6 +128,7 @@
   position: absolute;               
   left: 1rem;   
   pointer-events: none;
+
                
 }
 .toggle-password {
@@ -231,14 +232,27 @@
   font-size: 1vw;
   margin-left: 100px;
 }
-.corner-light2 {
+.corner-light2-about-us-page {
     position: absolute;
     top: 0;
     left: -2px;
     width: 90px;        /* size of the light */
     height: 90px;
     pointer-events: none; /* so it doesn’t block clicks */
-    background: radial-gradient(circle, rgba(99, 179, 237,1) 0%, rgba(255,255,255,0) 70%);
+    background: radial-gradient(circle, rgba(99, 179, 237, 1) 0%, rgba(255,255,255,0) 70%);
     filter: blur(30px);
-    z-index: 0;          /* make sure it’s above background but below content if needed */
+    z-index: 0;          /* above background but below content */
+    opacity: 0;          /* start transparent */
+    animation: fadePulse 6s ease-in-out infinite;
+}
+
+@keyframes fadePulse {
+    0%   { opacity: 0; }
+    50%  { opacity: 1; }
+    100% { opacity: 0; }
+}
+.about-container{
+  box-shadow: rgba(45, 45, 45, 0.5) 3px 3px 6px 0px inset, rgba(45, 45, 45, 0.5) -3px -3px 6px 1px inset;
+  border-radius: 30px;
+  padding: 100px;
 }
