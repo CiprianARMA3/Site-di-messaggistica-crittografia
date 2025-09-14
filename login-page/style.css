@@ -211,10 +211,10 @@
 
 .corner-light {
     position: absolute;
-    top: 0;
-    left: -2px;
-    width: 90px;        /* size of the light */
-    height: 90px;
+    top: 100px;
+    right: 40px;
+    width: 270px;        /* size of the light */
+    height: 270px;
     pointer-events: none; /* so it doesn’t block clicks */
     background: radial-gradient(circle, rgba(99, 179, 237,1) 0%, rgba(255,255,255,0) 70%);
     filter: blur(30px);
@@ -230,4 +230,15 @@
 .paragrafo-aboutus{
   font-size: 1vw;
   margin-left: 100px;
+}
+.corner-light2 {
+    position: absolute;
+    top: 0;
+    left: -2px;
+    width: 90px;        /* size of the light */
+    height: 90px;
+    pointer-events: none; /* so it doesn’t block clicks */
+    background: radial-gradient(circle, rgba(99, 179, 237,1) 0%, rgba(255,255,255,0) 70%);
+    filter: blur(30px);
+    z-index: 0;          /* make sure it’s above background but below content if needed */
 }
