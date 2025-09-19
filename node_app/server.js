@@ -32,9 +32,11 @@ app.post('/signup', (req, res) => {
     const encryptedUsername = encrypt(username);
     const encryptedEmail = encrypt(email);
 
+    const emailHash = crypto.createHash('sha256').update(email).digest('hex');
+
     db.run(
-        "INSERT INTO database_utenti(username, password, email) VALUES(?,?,?)",
-        [encryptedUsername, hashedPassword, encryptedEmail],
+        "INSERT INTO database_utenti(username, password, email, email_hash) VALUES(?,?,?,?)",
+        [encryptedUsername, hashedPassword, encryptedEmail, emailHash],
         (err) => {
             if (err) return res.send("Error: " + err.message);
             res.redirect('/login');
@@ -47,21 +49,24 @@ app.get('/login', (req, res) => res.render('login'));
 app.post('/login', (req, res) => {
     const { email, password } = req.body;
 
-    // Encrypt input email for comparison
-    const encryptedEmail = encrypt(email);
+    const emailHash = crypto.createHash('sha256').update(email).digest('hex');
 
-    db.get("SELECT * FROM database_utenti WHERE email=?", [encryptedEmail], (err, user) => {
-        if (err) return res.send("DB error: " + err.message);
-        if (!user) return res.send("Invalid login");
+    db.get(
+        "SELECT * FROM database_utenti WHERE email_hash=?",
+        [emailHash],
+        (err, user) => {
+            if (err) return res.send("DB error: " + err.message);
+            if (!user) return res.send("Invalid login");
 
-        const hashedInput = crypto.createHash('md5').update(password).digest('hex');
-        if (hashedInput !== user.password) return res.send("Invalid login");
+            const hashedInput = crypto.createHash('md5').update(password).digest('hex');
+            if (hashedInput !== user.password) return res.send("Invalid login");
 
-        const decryptedUsername = decrypt(user.username);
-        const decryptedEmail = decrypt(user.email);
+            const decryptedUsername = decrypt(user.username);
+            const decryptedEmail = decrypt(user.email);
 
-        res.render('home', { user: { username: decryptedUsername, email: decryptedEmail } });
-    });
+            res.render('home', { user: { username: decryptedUsername, email: decryptedEmail } });
+        }
+    );
 });
 
 // Start server
