@@ -15,50 +15,48 @@
         <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&display=swap" rel="stylesheet">
     
     </head>
-    <body>
-        <div class="corner-light"></div>
-        <script src="code.js" defer></script>
-        <section class="layout">
+<body>
+  <div class="layout">
+    
+    <!-- Vertical Header Menu -->
+    <div class="header">
+      <img src="images/logo-white.png" alt="Logo" class="logo">
+      <ul class="menu">
+        <li><a href="../login-page/main.html" id="selected-menu">Chat</a></li>
+        <li><a href="../about-us/about-us.html">About Us</a></li>
+        <li><a href="../contacts/contacts.html">Contacts</a></li>
+        <li><a href="../settings/settings.html">Settings</a></li>
+      </ul>
+    </div>
 
-            <div class="header">
-                <img src="images/logo-white.png" alt="Logo" class="logo">
-                <nav>
-                    <ul class="menu">
-                        <li><a href="../login-page/main.html" id="selected-menu">Chat</a></li>
-                        <li><a href="../about-us/about-us.html">About Us</a></li>
-                        <li><a href="../contacts/contacts.html">Contacts</a></li>
-                        <li><a href="../settings/settings.html">Settings</a></li>
-                    </ul>
-                </nav>
-            </div>
+    <!-- Main Content: Sidebar + Chat -->
+    <div class="main">
+      
+      <!-- Chat Sidebar -->
+      <div class="chat-sidebar">
+        <div class="sidebar-section">
+          <div class="chat-contact"><img src="images/user1.jpg" alt="User 1"></div>
+          <div class="chat-contact"><img src="images/user2.jpg" alt="User 2"></div>
+        </div>
+        <div class="sidebar-section">
+          <div class="chat-group"><img src="images/group1.jpg" alt="Group 1"></div>
+          <div class="chat-group"><img src="images/group2.jpg" alt="Group 2"></div>
+        </div>
+      </div>
 
-            <div class="main">
-                <div class="form-wrapper">
-                    <form>
-                        <p></p>
-                        <p>Username</p>
-                        <input type="text" id="username-box">
-                        <p>Password</p>
-                        <input type="password" id="password-box">
-                        <label id="toggle-password" class="toggle-password">Show Password</label>
-                        <button id="accedere-box" type="button">Log-in</button>  <br>
-                        <a href="../forgot-password/forgot-password.html">Forgotten Password</a>
-                        <a href="../register-page/register.html"> Register</a>
-                    </form>
-                    <div class="logo-container">
-                    <img src="../login-page/images/logo.png" alt="Logo" class="logo-immagine">
-                    </div>
-                </div>
+      <div class="chat-area">
+        <div class="chat-messages">
+          <div class="message friend">test</div>
+          <div class="message user">test</div>
+        </div>
+        <div class="chat-input">
+          <input type="text" placeholder="Type a message...">
+          <button>Send</button>
+        </div>
+      </div>
 
-            </div>
-            <div class="footer">
-                <p id="version-getter"></p>
-                <div id="container-logo">
-                    <a href="#"><img src="images/instagram-logo.png" alt="logo" class="footer-logos"></a>
-                    <a href="https://discord.gg/hvpJrx2tK7"><img src="images/discord-logo.webp" alt="logo" class="footer-logos"></a>
-                    <a href="#"><img src="images/telegram-white.webp" alt="logo" class="footer-logos"></a>
-                </div>
-            </div>
-        </section>
-    </body>
+    </div>
+
+  </div>
+</body>
 </html>

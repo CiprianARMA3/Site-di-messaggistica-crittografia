@@ -2,21 +2,21 @@
 <html>
     <head>
         <title>
-            Contacts
+            Chat
         </title>
         <link rel="icon" href="../login-page/images/logo-white.png">
 
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-        <link rel="stylesheet" href="../login-page/style.css">
+        <link rel="stylesheet" href="../chat-template/style-chat-template.css">
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&display=swap" rel="stylesheet">
     
     </head>
     <body>
-        <div class="corner-light"></div>
+        <div class="corner-light2-about-us-page"></div>
         <script src="code.js" defer></script>
         <section class="layout">
 
@@ -24,31 +24,55 @@
                 <img src="../login-page/images/logo-white.png" alt="Logo" class="logo">
                 <nav>
                     <ul class="menu">
-                        <li><a href="../login-page/main.html">Chat</a></li>
-                        <li><a href="../about-us/about-us.html">About Us</a></li>
-                        <li><a href="../contacts/contacts.html" id="selected-menu">Contacts</a></li>
-                        <li><a href="../settings/settings.html">Settings</a></li>
+                        <li><a href="../login-page/main.html"id="selected-menu"><img src="#" alt="menu" class="menu-logos"></a></li>
+                        <li><a href="../about-us/about-us.html"><img src="#" alt="menu" class="menu-logos"></a></li>
+                        <li><a href="../contacts/contacts.html" ><img src="#" alt="menu" class="menu-logos"></a></li>
+                        <li><a href="../settings/settings.html"><img src="#" alt="menu" class="menu-logos"></a></li>
                     </ul>
                 </nav>
             </div>
 
             <div class="main">
-                <div class="form-wrapper">
-                    <div class="logo-container">
-                    <img src="../login-page/images/logo.png" alt="Logo" class="logo-immagine">
-                    </div>
-                </div>
+            <div class="chat-sidebar">
+    <!-- Chats Section -->
+    <div class="sidebar-section">
+        <div class="sidebar-section-title">Chats</div>
+        <div class="chat-contact">
+            <img src="images/user1.jpg" alt="User 1">
+        </div>
+        <div class="chat-contact">
+            <img src="images/user2.jpg" alt="User 2">
+        </div>
+    </div>
 
+    <!-- Groups Section -->
+    <div class="sidebar-section">
+        <div class="sidebar-section-title">Groups</div>
+        <div class="chat-group">
+            <img src="images/group1.jpg" alt="Group 1">
+        </div>
+        <div class="chat-group">
+            <img src="images/group2.jpg" alt="Group 2">
+        </div>
+    </div>
+</div>
+    <!-- Chat Area -->
+<div class="chat-area">
+  <div class="chat-header">Chat with User 1</div>
+  
+  <div class="chat-messages">
+    <div class="message friend">Hello!</div>
+    <div class="message user">Hi there!</div>
+  </div>
+  
+  <div class="chat-input">
+    <input type="text" placeholder="Type a message...">
+    <button>Send</button>
+  </div>
+</div>
 
-            </div>
-            <div class="footer">
-                <p id="version-getter">customerhelp-feup@protonmail.com</p>
-                
-                <div id="container-logo">
-                    <img src="../login-page/images/instagram-logo.png" alt="logo" class="footer-logos">
-                    <img src="../login-page/images/discord-logo.webp" alt="logo" class="footer-logos">
-                    <img src="../login-page/images/telegram-white.webp" alt="logo" class="footer-logos">
-                </div>
+</div>
+
             </div>
         </section>
     </body>
