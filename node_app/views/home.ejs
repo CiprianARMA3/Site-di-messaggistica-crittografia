@@ -1,0 +1,8 @@
+<h1>Home</h1>
+
+<% if(user) { %>
+  <p>Welcome, <%= user.username %>!</p>
+  <p>Email: <%= user.email %></p>
+<% } else { %>
+  <p>Welcome! <a href="/signup">Sign up</a> or <a href="/login">Login</a></p>
+<% } %>
