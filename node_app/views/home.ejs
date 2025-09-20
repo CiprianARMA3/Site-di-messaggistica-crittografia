@@ -1,8 +1,20 @@
-<h1>Home</h1>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Home</title>
+</head>
+<body>
+  <% if (user) { %>
+    <h1>Welcome, <%= user.username %>!</h1>
+    <p>Your email: <%= user.email %></p>
 
-<% if(user) { %>
-  <p>Welcome, <%= user.username %>!</p>
-  <p>Email: <%= user.email %></p>
-<% } else { %>
-  <p>Welcome! <a href="/signup">Sign up</a> or <a href="/login">Login</a></p>
-<% } %>
+    <form action="/logout" method="POST">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button type="submit">Logout</button>
+    </form>
+  <% } else { %>
+    <h1>Welcome!</h1>
+    <p><a href="/login">Log in</a> or <a href="/signup">Sign up</a></p>
+  <% } %>
+</body>
+</html>
