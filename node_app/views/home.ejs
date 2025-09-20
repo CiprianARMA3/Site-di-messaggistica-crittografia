@@ -1,13 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Home</title>
+  <link rel="stylesheet" href="/css/style-chat.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
   <% if (user) { %>
-    <h1>Welcome, <%= user.username %>!</h1>
-    <p>Your email: <%= user.email %></p>
-
+    <script>
+      window.location.href = "/chat";
+    </script>
     <form action="/logout" method="POST">
       <input type="hidden" name="_csrf" value="<%= csrfToken %>">
       <button type="submit">Logout</button>

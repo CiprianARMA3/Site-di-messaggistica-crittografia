@@ -101,10 +101,12 @@ function emailHmac(email) {
                .update(String(email).toLowerCase())
                .digest('hex');
 }
-
 // --- Routes ---
 app.get('/contact', (req, res) => {
   res.render('contact', { csrfToken: res.locals.csrfToken, user: req.session?.user || null });
+});
+app.get('/chat', (req, res) => {
+  res.render('chat', { csrfToken: res.locals.csrfToken, user: req.session?.user || null });
 });
 
 app.get('/about-us', (req, res) => {
@@ -112,7 +114,15 @@ app.get('/about-us', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.render('home', { user: req.session.user || null });
+  if (req.session.user) {
+    // if logged in → go straight to chat
+    return res.redirect('/chat');
+  }
+  // if not logged in → show home page
+  res.render('home', { 
+    csrfToken: res.locals.csrfToken, 
+    user: null 
+  });
 });
 app.get('/home', (req, res) => {
   res.render('home', { csrfToken: res.locals.csrfToken, user: req.session?.user || null });
@@ -222,7 +232,7 @@ app.post('/login', authLimiter, async (req, res) => {
       username: decrypt(user.username),
       email: decrypt(user.email)
     };
-    res.redirect('/');
+    res.redirect('/chat');
   });
 });
 
