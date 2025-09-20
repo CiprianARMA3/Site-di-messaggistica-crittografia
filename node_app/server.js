@@ -107,13 +107,64 @@ app.get('/contact', (req, res) => {
   res.render('contact', { csrfToken: res.locals.csrfToken, user: req.session?.user || null });
 });
 
+app.get('/about-us', (req, res) => {
+  res.render('about-us', { csrfToken: res.locals.csrfToken, user: req.session?.user || null });
+});
+
 app.get('/', (req, res) => {
   res.render('home', { user: req.session.user || null });
 });
 app.get('/home', (req, res) => {
   res.render('home', { csrfToken: res.locals.csrfToken, user: req.session?.user || null });
 });
+app.get('/settings', (req, res) => {
+  res.render('settings', { csrfToken: res.locals.csrfToken, user: req.session?.user || null });
+});
 
+
+const lastRegistrationByIP = {};
+
+app.post('/signup', authLimiter, async (req, res) => {
+    const ip = req.ip;
+    const now = Date.now();
+
+    // Check if this IP registered within the last 3 minutes
+    if (lastRegistrationByIP[ip] && now - lastRegistrationByIP[ip] < 5 * 60 * 1000) {
+        return res.status(429).send('Please wait 3 minutes before registering again.');
+    }
+
+    const { username, email, password } = req.body;
+    if (!username || !email || !password)
+        return res.status(400).send('Missing fields');
+
+    const email_hash = emailHmac(email);
+    db.get("SELECT id FROM database_utenti WHERE email_hash = ?", [email_hash], async (err, row) => {
+        if (err) return res.status(500).send('Server error');
+        if (row) return res.status(400).send('Email already registered');
+
+        try {
+            const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+            const encUsername = encrypt(username);
+            const encEmail    = encrypt(email);
+
+            db.run(
+                "INSERT INTO database_utenti(username,password,email,email_hash) VALUES (?,?,?,?)",
+                [encUsername, hashedPassword, encEmail, email_hash],
+                (err2) => {
+                    if (err2) return res.status(500).send('Database insert error');
+
+                    // Store the registration time for this IP
+                    lastRegistrationByIP[ip] = Date.now();
+
+                    res.redirect('/login');
+                }
+            );
+        } catch (e) {
+            console.error(e);
+            res.status(500).send('Server error');
+        }
+    });
+});
 
 app.get('/signup', (req, res) =>
   res.render('signup', { csrfToken: res.locals.csrfToken })
