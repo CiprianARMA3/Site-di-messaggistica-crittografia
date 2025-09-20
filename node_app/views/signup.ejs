@@ -1,68 +1,76 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>
-            Register Page
-        </title>
-        <link rel="icon" href="/images/logo-white.png">
+<head>
+  <title>Register Page</title>
+  <link rel="icon" href="/images/logo-white.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="corner-light"></div>
+  <section class="layout">
+    <div class="header">
+      <img src="/images/logo-white.png" alt="Logo" class="logo">
+      <nav>
+        <ul class="menu">
+          <li><a href="/home" id="selected-menu">Chat</a></li>
+          <li><a href="/about-us">About Us</a></li>
+          <li><a href="/contact">Contacts</a></li>
+          <li><a href="/settings">Settings</a></li>
+        </ul>
+      </nav>
+    </div>
 
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <div class="main">
+      <div id="Box ">
+        <!-- NOTE: novalidate so we show our custom popup instead of native browser bubbles -->
+        <form id="signup-form" action="/signup" method="POST" novalidate>
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
-        <link rel="stylesheet" href="/css/style.css">
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&display=swap" rel="stylesheet">
-    
-    </head>
-    <body>
-        <div class="corner-light"></div>
-        <script src="/js/code_registerpage.js" defer></script>
-        <section class="layout">
+          <!-- server-side error (rendered when you call res.render('signup', { error: '...' })) -->
+          <% if (typeof error !== 'undefined') { %>
+            <div class="error-box"><%= error %></div>
+          <% } %>
 
-            <div class="header">
-                <img src="/images/logo-white.png" alt="Logo" class="logo">
-                <nav>
-                    <ul class="menu">
-                        <li><a href="/home" id="selected-menu">Chat</a></li>
-                        <li><a href="/about-us">About Us</a></li>
-                        <li><a href="/contact">Contacts</a></li>
-                        <li><a href="/settings">Settings</a></li>
-                    </ul>
-                </nav>
-            </div>
+          <!-- client-side error placeholder -->
+          <div id="client-error" class="error-box" style="display:none;"></div>
 
-            <div class="main">
-                <div id="Box ">
-                    <form action="/signup" method="POST">
-                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                        <p></p>
-                        <p>Username</p>
-                        <input type="text" id="username-box" name="username">
-                        <p id="redo-username"></p>
-                        <p>E-Mail</p>
-                        <input type="text" id="email-box" placeholder="Only for verification!" name="email">
-                        <p>Password</p>
-                        <input type="password" id="password-box" name="password">
-                        <label id="toggle-password" class="toggle-password">Show Password</label>
-                        <button id="accedere-box" type="submit">Register</button>
-                        <a href="/login"> Log-in</a>
-                    </form>
-                    <div class="logo-container">
-                    <img src="/images/logo.png" alt="Logo" class="logo-immagine">
-                    </div>
-                </div>
-            </div>
+          <p></p>
+          <p>Username</p>
+          <input type="text" id="username-box" name="username" maxlength="16" required>
 
-            <div class="footer">
-                <p id="version-getter"></p>
-                
-                <div id="container-logo">
-                    <a href="#"><img src="images/instagram-logo.png" alt="logo" class="footer-logos"></a>
-                    <a href="https://discord.gg/hvpJrx2tK7"><img src="images/discord-logo.webp" alt="logo" class="footer-logos"></a>
-                    <a href="#"><img src="images/telegram-white.webp" alt="logo" class="footer-logos"></a>
-                </div>
-            </div>
-        </section>
-    </body>
+          <p id="redo-username"></p>
+          <p>E-Mail</p>
+          <input type="email" id="email-box" name="email" placeholder="you@domain.com" required>
+
+          <p>Password</p>
+          <input type="password" id="password-box" name="password" maxlength="64" required>
+          <label id="toggle-password" class="toggle-password">Show Password</label>
+
+          <button id="accedere-box" type="submit">Register</button>
+          <a href="/login"> Log-in</a>
+        </form>
+
+        <div class="logo-container">
+          <img src="/images/logo.png" alt="Logo" class="logo-immagine">
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p id="version-getter"></p>
+      <div id="container-logo">
+        <a href="#"><img src="images/instagram-logo.png" alt="logo" class="footer-logos"></a>
+        <a href="https://discord.gg/hvpJrx2tK7"><img src="images/discord-logo.webp" alt="logo" class="footer-logos"></a>
+        <a href="#"><img src="images/telegram-white.webp" alt="logo" class="footer-logos"></a>
+      </div>
+    </div>
+  </section>
+
+  <script src="/js/code_registerpage.js"></script>
+</body>
 </html>

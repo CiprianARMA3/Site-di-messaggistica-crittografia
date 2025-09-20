@@ -1,23 +1,21 @@
 require('dotenv').config();
-const path       = require('path');
-const express    = require('express');
-const bodyParser = require('body-parser');
-const crypto     = require('crypto');
-const bcrypt     = require('bcrypt');
-const helmet     = require('helmet');
-const rateLimit  = require('express-rate-limit');
-const session    = require('express-session');
-const SQLiteStore= require('connect-sqlite3')(session);
-const csurf      = require('csurf');
-const { db }     = require('./db');    // our main database connection
+const path        = require('path');
+const express     = require('express');
+const bodyParser  = require('body-parser');
+const crypto      = require('crypto');
+const bcrypt      = require('bcrypt');
+const helmet      = require('helmet');
+const rateLimit   = require('express-rate-limit');
+const csurf       = require('csurf');
+const jwt         = require('jsonwebtoken');
+const cookieParser= require('cookie-parser');
+const { db }      = require('./db'); // main database connection
 
-const app = express(); 
-
-app.use(express.static(path.join(__dirname, 'public')));
+const app = express();
 
 // --- Environment / Secrets ---
 const SECRET_KEY     = process.env.SECRET_KEY;
-const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
+const JWT_SECRET     = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 const PORT           = process.env.PORT || 3000;
 const IN_PROD        = process.env.PRODUCTION === 'true';
 
@@ -32,46 +30,27 @@ const SALT_ROUNDS = 12;
 
 // --- App setup ---
 app.set('view engine', 'ejs');
+app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // --- Security middlewares ---
 app.use(helmet());
 
-// limit repeated login/signup attempts
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000,
   max: 20,
   message: 'Too many attempts, please try again later.'
 });
 
-// session store (SQLite backed) – ensure ./database exists!
-app.use(session({
-  store: new SQLiteStore({
-    db: 'sessions.sqlite',
-    dir: path.resolve(__dirname, '../database')   // safe absolute path
-  }),
-  name: 'sid',
-  secret: SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    secure: IN_PROD,      // enable true in production with HTTPS
-    sameSite: 'lax',
-    maxAge: 1000 * 60 * 60 * 2 // 2 hours
-  }
-}));
-
-// CSRF protection
-app.use(csurf());
+// CSRF protection (still works with JWT)
+app.use(csurf({ cookie: true }));
 app.use((req, res, next) => {
   res.locals.csrfToken = req.csrfToken();
   next();
 });
 
 // --- Helper functions ---
-
-// AES-256-GCM encryption → base64(iv:tag:cipher)
 function encrypt(text) {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', AES_KEY, iv);
@@ -89,106 +68,101 @@ function decrypt(b64) {
     const decipher = crypto.createDecipheriv('aes-256-gcm', AES_KEY, iv);
     decipher.setAuthTag(tag);
     return Buffer.concat([decipher.update(ct), decipher.final()]).toString('utf8');
-  } catch (err) {
-    console.error('Decryption failed:', err);
+  } catch {
     return null;
   }
 }
 
-// HMAC email hash for lookup (prevents rainbow tables)
 function emailHmac(email) {
   return crypto.createHmac('sha256', SECRET_KEY)
                .update(String(email).toLowerCase())
                .digest('hex');
 }
+
+// --- JWT Helpers ---
+function generateToken(user) {
+  return jwt.sign(
+    { id: user.id, username: user.username, email: user.email },
+    JWT_SECRET,
+    { expiresIn: '2h' }
+  );
+}
+
+function requireAuth(req, res, next) {
+  const token = req.cookies.token;
+  if (!token) return res.redirect('/login');
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch {
+    return res.redirect('/login');
+  }
+}
+
+function redirectIfAuth(req, res, next) {
+  const token = req.cookies.token;
+  if (!token) return next();
+
+  try {
+    jwt.verify(token, JWT_SECRET);
+    return res.redirect('/chat');
+  } catch {
+    next();
+  }
+}
+
 // --- Routes ---
-app.get('/contact', (req, res) => {
-  res.render('contact', { csrfToken: res.locals.csrfToken, user: req.session?.user || null });
+app.get('/', (req, res) => {
+  res.render('home', { csrfToken: res.locals.csrfToken, user: null });
 });
-app.get('/chat', (req, res) => {
-  res.render('chat', { csrfToken: res.locals.csrfToken, user: req.session?.user || null });
+
+app.get('/home', (req, res) => {
+  res.render('home', { csrfToken: res.locals.csrfToken, user: null });
 });
 
 app.get('/about-us', (req, res) => {
-  res.render('about-us', { csrfToken: res.locals.csrfToken, user: req.session?.user || null });
+  res.render('about-us', { csrfToken: res.locals.csrfToken });
 });
 
-app.get('/', (req, res) => {
-  if (req.session.user) {
-    // if logged in → go straight to chat
-    return res.redirect('/chat');
-  }
-  // if not logged in → show home page
-  res.render('home', { 
-    csrfToken: res.locals.csrfToken, 
-    user: null 
-  });
+app.get('/contact', (req, res) => {
+  res.render('contact', { csrfToken: res.locals.csrfToken });
 });
-app.get('/home', (req, res) => {
-  res.render('home', { csrfToken: res.locals.csrfToken, user: req.session?.user || null });
-});
+
 app.get('/settings', (req, res) => {
-  res.render('settings', { csrfToken: res.locals.csrfToken, user: req.session?.user || null });
+  res.render('settings', { csrfToken: res.locals.csrfToken });
 });
 
+// PROTECTED CHAT
+app.get('/chat', requireAuth, (req, res) => {
+  res.render('chat', { csrfToken: res.locals.csrfToken, user: req.user });
+});
 
+// --- SIGNUP ---
 const lastRegistrationByIP = {};
 
-app.post('/signup', authLimiter, async (req, res) => {
-    const ip = req.ip;
-    const now = Date.now();
-
-    // Check if this IP registered within the last 3 minutes
-    if (lastRegistrationByIP[ip] && now - lastRegistrationByIP[ip] < 5 * 60 * 1000) {
-        return res.status(429).send('Please wait 3 minutes before registering again.');
-    }
-
-    const { username, email, password } = req.body;
-    if (!username || !email || !password)
-        return res.status(400).send('Missing fields');
-
-    const email_hash = emailHmac(email);
-    db.get("SELECT id FROM database_utenti WHERE email_hash = ?", [email_hash], async (err, row) => {
-        if (err) return res.status(500).send('Server error');
-        if (row) return res.status(400).send('Email already registered');
-
-        try {
-            const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-            const encUsername = encrypt(username);
-            const encEmail    = encrypt(email);
-
-            db.run(
-                "INSERT INTO database_utenti(username,password,email,email_hash) VALUES (?,?,?,?)",
-                [encUsername, hashedPassword, encEmail, email_hash],
-                (err2) => {
-                    if (err2) return res.status(500).send('Database insert error');
-
-                    // Store the registration time for this IP
-                    lastRegistrationByIP[ip] = Date.now();
-
-                    res.redirect('/login');
-                }
-            );
-        } catch (e) {
-            console.error(e);
-            res.status(500).send('Server error');
-        }
-    });
-});
-
-app.get('/signup', (req, res) =>
+app.get('/signup', redirectIfAuth, (req, res) =>
   res.render('signup', { csrfToken: res.locals.csrfToken })
 );
 
 app.post('/signup', authLimiter, async (req, res) => {
+  const ip = req.ip;
+  const now = Date.now();
+
+  if (lastRegistrationByIP[ip] && now - lastRegistrationByIP[ip] < 5 * 60 * 1000) {
+    return res.status(429).render('signup', { csrfToken: res.locals.csrfToken, error: 'Please wait 5 minutes before registering again.' });
+  }
+
   const { username, email, password } = req.body;
-  if (!username || !email || !password)
-    return res.status(400).send('Missing fields');
+  if (!username || !email || !password) {
+    return res.status(400).render('signup', { csrfToken: res.locals.csrfToken, error: 'All fields are required.' });
+  }
 
   const email_hash = emailHmac(email);
   db.get("SELECT id FROM database_utenti WHERE email_hash = ?", [email_hash], async (err, row) => {
-    if (err) return res.status(500).send('Server error');
-    if (row) return res.status(400).send('Email already registered');
+    if (err) return res.status(500).render('signup', { csrfToken: res.locals.csrfToken, error: 'Server error.' });
+    if (row) return res.status(400).render('signup', { csrfToken: res.locals.csrfToken, error: 'Email already registered.' });
 
     try {
       const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
@@ -199,54 +173,67 @@ app.post('/signup', authLimiter, async (req, res) => {
         "INSERT INTO database_utenti(username,password,email,email_hash) VALUES (?,?,?,?)",
         [encUsername, hashedPassword, encEmail, email_hash],
         (err2) => {
-          if (err2) return res.status(500).send('Database insert error');
+          if (err2) return res.status(500).render('signup', { csrfToken: res.locals.csrfToken, error: 'Database insert error.' });
+
+          lastRegistrationByIP[ip] = Date.now();
           res.redirect('/login');
         }
       );
     } catch (e) {
       console.error(e);
-      res.status(500).send('Server error');
+      res.status(500).render('signup', { csrfToken: res.locals.csrfToken, error: 'Unexpected server error.' });
     }
   });
 });
 
-app.get('/login', (req, res) =>
+// --- LOGIN ---
+app.get('/login', redirectIfAuth, (req, res) =>
   res.render('login', { csrfToken: res.locals.csrfToken })
 );
 
 app.post('/login', authLimiter, async (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password)
-    return res.status(400).send('Missing fields');
+  if (!email || !password) {
+    return res.status(400).render('login', { csrfToken: res.locals.csrfToken, error: 'Please fill in all fields.' });
+  }
 
   const email_hash = emailHmac(email);
   db.get("SELECT * FROM database_utenti WHERE email_hash = ?", [email_hash], async (err, user) => {
-    if (err) return res.status(500).send('Server error');
-    if (!user) return res.status(401).send('Invalid credentials');
+    if (err) return res.status(500).render('login', { csrfToken: res.locals.csrfToken, error: 'Server error.' });
+    if (!user) return res.status(401).render('login', { csrfToken: res.locals.csrfToken, error: 'Invalid credentials.' });
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(401).send('Invalid credentials');
+    if (!match) return res.status(401).render('login', { csrfToken: res.locals.csrfToken, error: 'Invalid credentials.' });
 
-    req.session.user = {
+    const decodedUser = {
       id: user.id,
       username: decrypt(user.username),
       email: decrypt(user.email)
     };
+
+    const token = generateToken(decodedUser);
+
+    // Send JWT as an httpOnly cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: IN_PROD,
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 2 // 2h
+    });
+
     res.redirect('/chat');
   });
 });
 
-app.post('/logout', (req, res, next) => {
-  req.session.destroy(err => {
-    if (err) return next(err);
-    res.clearCookie('sid');
-    res.redirect('/');
-  });
+// --- LOGOUT ---
+app.post('/logout', (req, res) => {
+  res.clearCookie('token');
+  res.redirect('/');
 });
 
-app.get('/protected', (req, res) => {
-  if (!req.session.user) return res.status(401).send('Unauthorized');
-  res.render('protected', { user: req.session.user });
+// --- PROTECTED TEST ---
+app.get('/protected', requireAuth, (req, res) => {
+  res.render('protected', { user: req.user });
 });
 
 // --- Start server ---

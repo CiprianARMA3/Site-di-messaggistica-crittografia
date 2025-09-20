@@ -35,10 +35,13 @@
             <div class="main">
                 <div id="Box ">
                     <form action="/login" method="POST">
+                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">   
+                        <% if (typeof error !== 'undefined') { %>
+                        <div class="error-box"><%= error %></div>
+                        <% } %>                     
                         <p></p>
                         <p>E-Mail</p>
                         <input type="text" id="username-box" name="email" required>
-                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">                        
                         <p>Password</p>
                         <input type="password" id="password-box" name="password" required>
                         <label id="toggle-password" class="toggle-password">Show Password</label>
