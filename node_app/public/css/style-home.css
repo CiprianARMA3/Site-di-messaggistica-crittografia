@@ -1,0 +1,598 @@
+ * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      font-family: "Nunito Sans", sans-serif;
+      color: white;
+      background-color: rgb(21, 20, 20);
+      overflow: hidden
+    }
+
+    .layout {
+      display: grid;
+      grid:
+        "header" auto
+        "main" 1fr
+        "footer" auto
+        / 1fr;
+      gap: 8px;
+      height: 100vh;
+    }
+
+    .header {
+      grid-area: header;
+      background-color: /* rgb(21, 20, 20);rgb(49, 47, 47) vecchi valori */ transparent;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+      font-size: 1.5rem;
+      font-weight: bold;
+      padding: 1rem;
+      gap: 1rem;
+      position: relative;   
+      z-index: 1;
+    }
+
+    .main {
+      grid-area: main;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: visible;
+      position: relative;
+
+    }
+
+    /* Form container */
+    .main form {
+      background-color: rgb(40, 40, 40);
+      padding: 2rem;
+      border-radius: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-width: 300px;
+      width: 100%;
+      box-shadow: 
+        6px 2px 16px 0px rgba(0, 0, 0, 0.6),
+        -6px -2px 16px 0px rgba(80, 80, 100, 0.3); 
+
+     position: relative;
+          }
+
+    /* Input fields */
+    input[type="text"], input[type="password"],[type="email"] {
+      padding: 0.5rem;
+      border-radius: 8px;
+      border: none;
+      font-size: 1rem;
+    }
+
+    /* Button */
+    #accedere-box {
+      padding: 0.5rem;
+      border-radius: 10px;
+      border: none;
+      background-color: #1e90ff;
+      color: white;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background-color 0.2s;
+    }
+
+    #accedere-box:hover {
+      background-color: #1c86ee;
+    }
+
+
+    a {
+      color: #1e90ff;
+      text-decoration: none;
+      font-size: 0.9rem;
+      align-self: flex-start;
+
+    }
+
+    a:hover {
+      color: rgb(99, 179, 237);
+    }
+
+
+    .footer {
+      grid-area: footer;
+      background-color: rgb(49, 47, 47);
+      display: flex;
+      justify-content:space-between;
+      padding: 0.2rem;
+      font-size: 0.9rem;
+      overflow: hidden;
+      position: relative;
+      z-index: 5;
+    }
+    
+.header .logo {
+  height: 50px;
+  width: auto;
+  opacity: 0.5;
+  position: absolute;               
+  left: 1rem;   
+  pointer-events: none;
+
+               
+}
+.toggle-password {
+    cursor: pointer;
+    color: #a0a0a0;
+    font-size: 0.9rem;
+}
+.footer-logos{
+    height:20px;
+    width: auto;
+    margin-left: 50px;
+}
+
+.logo-immagine {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-40%, -50%) rotate(10deg) skewY(0deg); /* rotate right */
+    font-size: 18rem;   /* slightly smaller to fit fully */
+    font-weight: 900;
+    color: rgba(0,0,0,0.05);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 1;
+    height: 100vh;
+}
+
+.logo-container {
+    position: absolute;
+    top: 50%;
+    left: 85%;
+    transform: translate(-40%, -30%) rotate(-10deg) skewY(0deg); /* rotate right */
+    font-size: 18rem;   /* visually large */
+    font-weight: 900;
+    color: rgba(0,0,0,0.05);
+    pointer-events: none;
+    z-index: 2;
+    filter: blur(8px);
+      -webkit-filter: blur(8px);
+}
+
+.menu {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 720px;
+  margin: 0 auto;
+
+  list-style: none;
+}
+
+.menu li {
+  width: 125px;
+  height: 50px;
+  transition: background-position-x 0.9s linear;
+  text-align: center;
+
+  a {
+    font-size: 22px;
+    color: #ececec;
+    text-decoration: none;
+    transition: all 0.45s;
+  }
+
+  &:hover {
+    animation: line 1s;
+  }
+
+  &:hover a {
+    color: #1e90ff;
+  }
+
+  &:not(:last-child) {
+    margin-right: 30px;
+  }
+}
+
+@keyframes line {
+  0% {
+    background-position-x: 390px;
+  }
+}
+
+.corner-light {
+    position: absolute;
+    top: 100px;
+    right: 40px;
+    width: 270px;        /* size of the light */
+    height: 270px;
+    pointer-events: none; /* so it doesn’t block clicks */
+    background: radial-gradient(circle, rgba(99, 179, 237,1) 0%, rgba(255,255,255,0) 70%);
+    filter: blur(30px);
+    z-index: 0;          /* make sure it’s above background but below content if needed */
+}
+
+#selected-menu{
+  color: #1c86ee;
+}
+#selected-menu:hover   {
+  color: white;
+}
+.paragrafo-aboutus{
+  font-size: 1vw;
+  margin-left: 100px;
+}
+.corner-light2-about-us-page {
+    position: absolute;
+    top: 0;
+    left: -2px;
+    width: 90px;        /* size of the light */
+    height: 90px;
+    pointer-events: none; /* so it doesn’t block clicks */
+    background: radial-gradient(circle, rgba(99, 179, 237, 1) 0%, rgba(255,255,255,0) 70%);
+    filter: blur(30px);
+    z-index: 0;          /* above background but below content */
+    opacity: 0;          /* start transparent */
+    animation: fadePulse 6s ease-in-out infinite;
+}
+
+@keyframes fadePulse {
+    0%   { opacity: 0; }
+    50%  { opacity: 1; }
+    100% { opacity: 0; }
+}
+.about-container{
+  box-shadow: rgba(45, 45, 45, 0.5) 3px 3px 6px 0px inset, rgba(45, 45, 45, 0.5) -3px -3px 6px 1px inset;
+  border-radius: 30px;
+  padding: 100px;
+}
+
+/* Chat layout */
+.chat-container {
+    display: flex;
+    height: 100%;
+    gap: 1rem;
+    width: 100%;
+}
+
+/* Sidebar / contacts list */
+.chat-sidebar {
+    width: 280px;
+    background-color: rgb(35, 35, 35);
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 1rem;
+    box-shadow:
+        6px 6px 16px rgba(0,0,0,0.6),
+        -6px -6px 16px rgba(70,70,90,0.3);
+}
+
+.chat-sidebar h2 {
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    color: #fff;
+}
+
+.chat-contact {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.chat-contact:hover {
+    background-color: rgba(30,144,255,0.2);
+}
+
+.chat-contact img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Chat messages area */
+.chat-messages {
+    flex: 1;
+    background-color: rgb(40,40,40);
+    border-radius: 15px;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    overflow-y: auto;
+    box-shadow:
+        6px 6px 16px rgba(0,0,0,0.6),
+        -6px -6px 16px rgba(70,70,90,0.3);
+}
+
+/* Single message */
+.message {
+    max-width: 70%;
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    line-height: 1.3;
+}
+
+.message.user {
+    align-self: flex-end;
+    background-color: rgb(30,144,255);
+    color: white;
+    box-shadow: 
+        3px 3px 6px rgba(0,0,0,0.4),
+        -3px -3px 6px rgba(70,70,90,0.2);
+}
+
+.message.friend {
+    align-self: flex-start;
+    background-color: rgb(55,55,55);
+    color: #fff;
+    box-shadow: 
+        3px 3px 6px rgba(0,0,0,0.4),
+        -3px -3px 6px rgba(70,70,90,0.2);
+}
+
+/* Message input area */
+.chat-input {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 15px;
+    background-color: rgb(35,35,35);
+    margin-top: auto;
+}
+
+.chat-input input {
+    flex: 1;
+    padding: 0.75rem;
+    border-radius: 10px;
+    border: none;
+    background-color: rgb(50,50,50);
+    color: white;
+}
+
+.chat-input button {
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    border: none;
+    background-color: #1e90ff;
+    color: white;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.chat-input button:hover {
+    background-color: #1c86ee;
+}
+.error-box {
+  color: #ffffff;
+  background: #e74c3c;        /* red background */
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  display: block;
+  box-shadow: 0 6px 18px rgba(255, 255, 255, 0.45);
+  animation: fadeIn 160ms ease-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Background overlay with blur */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url("/images/bg.jpg") center/cover no-repeat; /* optional background image */
+  filter: blur(12px) brightness(0.6);
+  z-index: -2;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: -1;
+}
+
+/* Hero Section with brillare effect */
+.hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 70vh;
+  padding: 2rem;
+  color: #fff;
+  background: rgba(60, 60, 60, 0.6);
+  border: 2px solid rgba(255,255,255,0.8);
+  border-radius: 20px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.5), 
+              0 0 25px rgba(255,255,255,0.2); /* subtle glow */
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shiny gradient sweep (brillare) */
+.hero::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 400%;
+  height: 200%;
+  filter: blur(10px);
+  border-radius: 440px;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255,255,255,0.15),
+    transparent
+  );
+  transform: rotate(25deg);
+  animation: shine 6s linear infinite;
+  pointer-events: none;
+}
+
+/* Animation for shimmer */
+@keyframes shine {
+  0% { transform: translateX(-100%) rotate(25deg); }
+  100% { transform: translateX(100%) rotate(25deg); }
+}
+
+/* Headline & Tagline */
+.hero h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+  text-shadow: 0 0 10px rgba(255,255,255,0.3);
+}
+
+.hero .tagline {
+  font-size: 1.2rem;
+  max-width: 600px;
+  margin-bottom: 2rem;
+  color: #e0e0e0;
+}
+
+/* Buttons */
+.hero-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.btn {
+  text-decoration: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Primary button with glow */
+.btn.primary {
+  background: #00c853;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(0,200,83,0.6);
+}
+
+.btn.primary:hover {
+  background: #00e676;
+  box-shadow: 0 0 15px rgba(0,230,118,0.8);
+}
+
+/* Secondary button with glow */
+.btn.secondary {
+  background: transparent;
+  border: 2px solid #fff;
+  color: #fff;
+  box-shadow: 0 0 10px rgba(255,255,255,0.3);
+}
+
+.btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 15px rgba(255,255,255,0.6);
+}
+
+
+/* -------- CUSTOM SCROLLBAR -------- */
+::-webkit-scrollbar {
+  width: 8px;              /* slim */
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent; /* no bulky background */
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(30,144,255,0.6); /* matches your theme blue */
+  border-radius: 10px;
+  transition: background 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(30,144,255,0.9);
+}
+
+/* Base scrollbar hidden */
+::-webkit-scrollbar {
+  width: 8px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(30, 144, 255, 0.6);
+  border-radius: 10px;
+  transition: background 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(30,144,255,0.9);
+}
+
+/* Features Section */
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 2rem;
+  margin-top: 3rem;
+  padding: 2rem;
+  text-align: center;
+  color: #fff;
+}
+
+.feature {
+  background: rgba(60,60,60,0.6);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 15px;
+  padding: 1.5rem;
+  backdrop-filter: blur(8px);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 0 20px rgba(255,255,255,0.2);
+}
+
+.feature i {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #1c86ee;
+}
+
+.feature h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.feature p {
+  font-size: 0.95rem;
+  color: #e0e0e0;
+}

@@ -4,10 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Home</title>
-  <link rel="stylesheet" href="/css/style-chat.css">
+  <link rel="stylesheet" href="/css/style-home.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
+
+  <!-- making the css part 
   <% if (user) { %>
     <script>
       window.location.href = "/chat";
@@ -20,5 +22,65 @@
     <h1>Welcome!</h1>
     <p><a href="/login">Log in</a> or <a href="/signup">Sign up</a></p>
   <% } %>
+  -->   <div class="corner-light2-about-us-page"></div>
+        <section class="layout">
+
+            <div class="header">
+                <img src="/images/logo-white.png" alt="Logo" class="logo">
+                <nav>
+                    <ul class="menu">
+                        <li><a href="/home" id="selected-menu">Home</a></li>
+                        <li><a href="/about-us">About Us</a></li>
+                        <li><a href="/contact" >Contacts</a></li>
+                        <li><a href="/settings">Settings</a></li>
+                    </ul>
+                </nav>
+            </div>
+
+            <div class="main">
+              <div class="hero">
+                  <h1>Talk Freely. We’re Not Listening.</h1>
+                  <p class="tagline">
+                    End-to-end encryption keeps your conversations private — 
+                    not even we can read them.
+                  </p>
+                  <div class="hero-buttons">
+                    <a href="/signup" class="btn primary">Sign Up</a>
+                    <a href="/login" class="btn secondary">Log In</a>
+                  </div>
+                </div>
+                <div class="features">
+                  <div class="feature">
+                    <i class="fa-solid fa-lock"></i>
+                    <h3>End-to-End Encryption</h3>
+                    <p>Your messages are secured with modern cryptography. No one — not even us — can read them.</p>
+                  </div>
+                  <div class="feature">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <h3>Privacy First</h3>
+                    <p>We don’t track you, sell data, or store keys. Your conversations belong only to you.</p>
+                  </div>
+                  <div class="feature">
+                    <i class="fa-solid fa-bolt"></i>
+                    <h3>Fast & Reliable</h3>
+                    <p>Built with speed and simplicity in mind, so staying safe never slows you down.</p>
+                  </div>
+                  <div class="feature">
+                    <i class="fa-solid fa-globe"></i>
+                    <h3>Connect Anywhere</h3>
+                    <p>Works across devices, keeping your chats synced without compromising security.</p>
+                  </div>
+                </div>
+            </div>
+            <div class="footer">
+                <p id="version-getter">customerhelp-feup@protonmail.com</p>
+                
+                <div id="container-logo">
+                    <a href="#"><img src="/images/instagram-logo.png" alt="logo" class="footer-logos"></a>
+                    <a href="https://discord.gg/hvpJrx2tK7"><img src="/images/discord-logo.webp" alt="logo" class="footer-logos"></a>
+                    <a href="#"><img src="/images/telegram-white.webp" alt="logo" class="footer-logos"></a>
+                </div>
+            </div>
+        </section>
 </body>
 </html>
