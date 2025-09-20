@@ -2,9 +2,9 @@
 <html>
     <head>
         <title>
-            Home
+            Contacts
         </title>
-        <link rel="icon" href="../login-page/images/logo-white.png">
+        <link rel="icon" href="/images/logo-white.png">
 
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,43 +16,26 @@
     
     </head>
     <body>
-        <div class="corner-light"></div>
-        <script src="/js/code_loginpage.js" defer></script>
+        <div class="corner-light2-about-us-page"></div>
+        <script src="/js/code.js" defer></script>
         <section class="layout">
 
             <div class="header">
                 <img src="/images/logo-white.png" alt="Logo" class="logo">
                 <nav>
                     <ul class="menu">
-                        <li><a href="/login" id="selected-menu">Chat</a></li>
+                        <li><a href="/home">Home</a></li>
                         <li><a href="../about-us/about-us.html">About Us</a></li>
-                        <li><a href="/contact">Contacts</a></li>
+                        <li><a href="/contact" id="selected-menu">Contacts</a></li>
                         <li><a href="../settings/settings.html">Settings</a></li>
                     </ul>
                 </nav>
             </div>
 
             <div class="main">
-                <div id="Box ">
-                    <form action="/login" method="POST">
-                        <p></p>
-                        <p>E-Mail</p>
-                        <input type="text" id="username-box" name="email" required>
-                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">                        
-                        <p>Password</p>
-                        <input type="password" id="password-box" name="password" required>
-                        <label id="toggle-password" class="toggle-password">Show Password</label>
-                        <button id="accedere-box" type="submit">Login</button>
-                        <a href="/signup"> Register</a>
-                    </form>
-                    <div class="logo-container">
-                    <img src="/images/logo.png" alt="Logo" class="logo-immagine">
-                    </div>
-                </div>
             </div>
-
             <div class="footer">
-                <p id="version-getter"></p>
+                <p id="version-getter">customerhelp-feup@protonmail.com</p>
                 
                 <div id="container-logo">
                     <a href="#"><img src="/images/instagram-logo.png" alt="logo" class="footer-logos"></a>

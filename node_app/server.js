@@ -103,10 +103,17 @@ function emailHmac(email) {
 }
 
 // --- Routes ---
+app.get('/contact', (req, res) => {
+  res.render('contact', { csrfToken: res.locals.csrfToken, user: req.session?.user || null });
+});
 
 app.get('/', (req, res) => {
   res.render('home', { user: req.session.user || null });
 });
+app.get('/home', (req, res) => {
+  res.render('home', { csrfToken: res.locals.csrfToken, user: req.session?.user || null });
+});
+
 
 app.get('/signup', (req, res) =>
   res.render('signup', { csrfToken: res.locals.csrfToken })
