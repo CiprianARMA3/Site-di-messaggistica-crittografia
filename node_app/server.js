@@ -11,6 +11,10 @@ const SQLiteStore= require('connect-sqlite3')(session);
 const csurf      = require('csurf');
 const { db }     = require('./db');    // our main database connection
 
+const app = express(); 
+
+app.use(express.static(path.join(__dirname, 'public')));
+
 // --- Environment / Secrets ---
 const SECRET_KEY     = process.env.SECRET_KEY;
 const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
@@ -27,7 +31,6 @@ const AES_KEY = crypto.createHash('sha256').update(SECRET_KEY).digest();
 const SALT_ROUNDS = 12;
 
 // --- App setup ---
-const app = express();
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended: true }));
 
