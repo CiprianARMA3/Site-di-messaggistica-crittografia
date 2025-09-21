@@ -223,9 +223,13 @@
 
 #selected-menu{
   color: #1c86ee;
+    text-shadow: 0 0 10px rgba(255,255,255,0.3);
+
 }
 #selected-menu:hover   {
   color: white;
+    text-shadow: 0 0 10px rgba(255,255,255,0.3);
+
 }
 .paragrafo-aboutus{
   font-size: 1vw;

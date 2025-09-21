@@ -19,6 +19,7 @@
     <body>
         <div class="corner-light"></div>
         <script src="/js/code_loginpage.js" defer></script>
+
         <section class="layout">
 
             <div class="header">
@@ -34,24 +35,23 @@
             </div>
 
             <div class="main">
-                <div id="Box ">
+                <div id="accedere">
                     <form action="/login" method="POST">
                         <input type="hidden" name="_csrf" value="<%= csrfToken %>">   
                         <% if (typeof error !== 'undefined') { %>
                         <div class="error-box"><%= error %></div>
                         <% } %>                     
                         <p></p>
-                        <p>E-Mail</p>
+                        <p class="shiny-ahh-text">E-Mail</p>
                         <input type="text" id="username-box" name="email" required>
-                        <p>Password</p>
+                        <p class="shiny-ahh-text">Password</p>
                         <input type="password" id="password-box" name="password" required>
                         <label id="toggle-password" class="toggle-password">Show Password</label>
                         <button id="accedere-box" type="submit">Login</button>
-                        <a href="/signup"> Register</a>
-                        <a href="/forgot-password">Forgot Password</a>
+                        <a href="/signup" class="shiny-ahh-text"> Register</a>
+                        <a href="/forgot-password"class="shiny-ahh-text">Forgot Password</a>
                     </form>
                     <div class="logo-container">
-                    <img src="/images/logo.png" alt="Logo" class="logo-immagine">
                     </div>
                 </div>
             </div>
@@ -66,5 +66,8 @@
                 </div>
             </div>
         </section>
+                              <div class="logo-container">
+                    <img src="/images/euoutline.png" alt="Logo" class="logo-immagine">
+                    </div>
     </body>
 </html>

@@ -83,10 +83,14 @@ html, body {
 
 #selected-menu {
   color: #1c86ee;
+    text-shadow: 0 0 10px rgba(255,255,255,0.3);
+
 }
 
 #selected-menu:hover {
   color: white;
+    text-shadow: 0 0 10px rgba(255,255,255,0.3);
+
 }
 
 @keyframes line {
@@ -159,4 +163,8 @@ html, body {
   height: 20px;
   width: auto;
   margin-left: 50px;
+}
+a{
+  color: #1c86ee;
+  text-decoration: none;
 }
