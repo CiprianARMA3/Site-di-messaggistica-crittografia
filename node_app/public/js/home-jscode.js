@@ -20,7 +20,7 @@ const cities = [
   "Luxembourg",  // Luxembourg
   "Madrid",      // Spain
   "Monaco",      // Monaco
-  "Moscow",      // Russia (geographically partly Europe)
+  "Moscow",      // Russia 
   "Oslo",        // Norway
   "Paris",       // France
   "Podgorica",   // Montenegro
@@ -76,7 +76,6 @@ const cities = [
 
   typeEffect();
 
-  // cursor blink
   setInterval(() => cursorEl.classList.toggle("hidden"), 500);
 
   const hero2 = document.querySelector(".hero2");
@@ -90,3 +89,10 @@ const cities = [
   });
 
   observer.observe(hero2);
+
+
+  window.addEventListener('resize', () => {
+  const scale = window.devicePixelRatio || 1;
+  document.querySelector('.logo-container').style.filter =
+    `blur(${8/scale}px)`;
+});
