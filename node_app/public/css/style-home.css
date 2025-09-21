@@ -9,7 +9,8 @@
       font-family: "Nunito Sans", sans-serif;
       color: white;
       background-color: rgb(21, 20, 20);
-      overflow: hidden
+      overflow: hidden;
+      scroll-behavior: smooth;
     }
 
     .layout {
@@ -152,9 +153,9 @@
 
 .logo-container {
     position: absolute;
-    top: 50%;
+    top: 55%;
     left: 85%;
-    transform: translate(-40%, -30%) rotate(-10deg) skewY(0deg); /* rotate right */
+    transform: translate(100%, -100%) rotate(-10deg) skewY(0deg); /* rotate right */
     font-size: 18rem;   /* visually large */
     font-weight: 900;
     color: rgba(0,0,0,0.05);
@@ -162,6 +163,8 @@
     z-index: 2;
     filter: blur(8px);
       -webkit-filter: blur(8px);
+    opacity: 0.3;
+    
 }
 
 .menu {
@@ -491,14 +494,14 @@ body::after {
 
 /* Primary button with glow */
 .btn.primary {
-  background: #00c853;
+  background: #1c86ee; /* main blue */
   color: #fff;
-  box-shadow: 0 0 10px rgba(0,200,83,0.6);
+  box-shadow: 0 0 10px rgba(28, 134, 238, 0.6);
 }
 
 .btn.primary:hover {
-  background: #00e676;
-  box-shadow: 0 0 15px rgba(0,230,118,0.8);
+  background: #3399ff; /* lighter hover blue */
+  box-shadow: 0 0 15px rgba(51, 153, 255, 0.8);
 }
 
 /* Secondary button with glow */
@@ -565,6 +568,7 @@ body::after {
   padding: 2rem;
   text-align: center;
   color: #fff;
+
 }
 
 .feature {
@@ -574,6 +578,8 @@ body::after {
   padding: 1.5rem;
   backdrop-filter: blur(8px);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  z-index: 10;
 }
 
 .feature:hover {
@@ -595,4 +601,63 @@ body::after {
 .feature p {
   font-size: 0.95rem;
   color: #e0e0e0;
+}
+.cursor {
+  display: inline-block;
+  margin-left: 4px;
+  color: #1e90ff;
+  font-weight: bold;
+}
+
+.hidden {
+  opacity: 0;
+}
+
+.hero2 {
+  margin-top: 1rem;
+  padding: 3rem 2rem;
+    background: rgba(60,60,60,0.6);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 15px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.5), 
+              0 0 25px rgba(255,255,255,0.2);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  grid-column: 1 / -1; 
+  width: 100%;
+  height: 84.5%;
+  text-align: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+  z-index: 10;
+  
+}
+.hero2:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 0 20px rgba(255,255,255,0.2);
+}
+.hero2-content {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.hero2 h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.hero2 .tagline {
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+  color: #e0e0e0;
+}
+
+.shiny-ahh-text{
+    font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+  text-shadow: 0 0 10px rgba(255,255,255,0.3);
+  color: #1c86ee;
 }

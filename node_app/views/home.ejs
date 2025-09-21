@@ -8,8 +8,6 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-
-  <!-- making the css part 
   <% if (user) { %>
     <script>
       window.location.href = "/chat";
@@ -19,10 +17,7 @@
       <button type="submit">Logout</button>
     </form>
   <% } else { %>
-    <h1>Welcome!</h1>
-    <p><a href="/login">Log in</a> or <a href="/signup">Sign up</a></p>
-  <% } %>
-  -->   <div class="corner-light2-about-us-page"></div>
+     <div class="corner-light2-about-us-page"></div>
         <section class="layout">
 
             <div class="header">
@@ -70,6 +65,16 @@
                     <h3>Connect Anywhere</h3>
                     <p>Works across devices, keeping your chats synced without compromising security.</p>
                   </div>
+                  <section class="hero2">
+  <h1>
+    Are you here ? <span id="city-loop"></span><span class="cursor">|</span>
+  </h1>
+  <p class="tagline">
+    <b class="shiny-ahh-text">We don't know; </b>Private. Encrypted. Yours only.
+  </p>
+    <a href="/about-us" class="btn secondary">Learn More</a>
+
+</section>
                 </div>
             </div>
             <div class="footer">
@@ -82,5 +87,10 @@
                 </div>
             </div>
         </section>
+          <% } %>
+          <script src="/js/home-jscode.js"></script>
+                              <div class="logo-container">
+                    <img src="/images/euoutline.png" alt="Logo" class="logo-immagine">
+                    </div>
 </body>
 </html>

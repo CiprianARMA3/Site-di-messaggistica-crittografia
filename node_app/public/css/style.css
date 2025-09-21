@@ -71,6 +71,7 @@
       border-radius: 8px;
       border: none;
       font-size: 1rem;
+        outline: none;
     }
 
     /* Button */
@@ -390,4 +391,17 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
+}
+
+.main form label,
+.main form input,
+.main form button,
+.main form a {
+  font-weight: 500;  /* semi-bold */
+}
+
+/* Placeholder text also a bit stronger */
+.main form input::placeholder {
+  font-weight: 500;
+  color: #cccccc; /* lighter but thicker */
 }
