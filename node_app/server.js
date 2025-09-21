@@ -130,6 +130,10 @@ app.get('/contact', (req, res) => {
   res.render('contact', { csrfToken: res.locals.csrfToken });
 });
 
+app.get('/forgot-password', (req, res) => {
+  res.render('forgot-password', { csrfToken: res.locals.csrfToken });
+});
+
 app.get('/settings', (req, res) => {
   res.render('settings', { csrfToken: res.locals.csrfToken });
 });
