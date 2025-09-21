@@ -13,6 +13,11 @@
     <script>
       window.location.href = "/chat";
     </script>
+    <form action="/logout" method="POST" style="display:inline;">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <button type="submit" id="logout-btn">Logout</button>
+    </form>
+    <!-- logout thing to keep -->
   <% } else { %>
      <div class="corner-light2-about-us-page"></div>
         <section class="layout">
