@@ -17,7 +17,8 @@
     </head>
     <body>
         <div class="corner-light2-about-us-page"></div>
-        <script src="/js/code.js" defer></script>
+        <script src="/js/settings.js" defer></script>
+        
         <section class="layout">
 
             <div class="header">
@@ -33,9 +34,28 @@
             </div>
 
             <div class="main">
+                <% if (user) { %>
+                    <img src="<%= userSettings.pfp %>" alt="User Profile">
+                        <!-- Change PFP -->
+<!-- settings.ejs (multipart form) -->
+<form action="/settings/pfp?_csrf=<%= encodeURIComponent(csrfToken) %>" method="post" enctype="multipart/form-data">
+  <!-- note: for multipart we put token in query so csurf can read it before multer -->
+  <input type="file" name="pfp" accept="image/*" required>
+  <button type="submit">Change Profile Picture</button>
+</form>
 
+    <!-- Change Username -->
+    <form action="/settings/username" method="post">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+      <input type="text" name="newUsername" placeholder="New username" required>
+      <button type="submit">Change Username</button>
+    </form>
 
-
+                <% } else { %>
+                        <script>
+                            window.location.href = "/login";
+                            </script>
+                     <% } %>
             </div>
             <div class="footer">
                 <p id="version-getter">customerhelp-feup@protonmail.com</p>

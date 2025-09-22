@@ -31,7 +31,6 @@
         <form id="signup-form" action="/signup" method="POST" novalidate>
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
-          <!-- server-side error (rendered when you call res.render('signup', { error: '...' })) -->
           <% if (typeof error !== 'undefined') { %>
             <div class="error-box"><%= error %></div>
           <% } %>
