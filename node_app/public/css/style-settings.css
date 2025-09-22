@@ -134,3 +134,18 @@ html, body {
   50%  { opacity: 1; }
   100% { opacity: 0; }
 }
+
+
+.error-box {
+  color: #ffffff;
+  background: #e74c3c;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  display: block;
+  animation: fadeIn 160ms ease-out;
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.3),
+    0 0 12px rgba(231, 76, 60, 0.6);
+}

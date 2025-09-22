@@ -9,14 +9,18 @@ const rateLimit = require('express-rate-limit');
 const csurf = require('csurf');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
+const multer = require('multer');
+const fs = require('fs');
+const sharp = require('sharp'); // ✅ for image resizing/compression
+
 const { db } = require('./db'); // SQLite
-const { getSettings, updateSettings } = require("./userSettings");
+const { getSettings, updateSettings, deletePfp, canChangeUsername } = require("./userSettings");
 
 const app = express();
 
 // --- Static files ---
-app.use(express.static(path.join(__dirname, "public"))); // serves /public/* at /
-app.use("/user-images", express.static(path.join(__dirname, "database/user-images"))); // uploaded pfps
+app.use(express.static(path.join(__dirname, "public")));
+app.use("/user-images", express.static(path.join(__dirname, "database/user-images")));
 
 // --- Environment / Secrets ---
 const SECRET_KEY = process.env.SECRET_KEY;
@@ -53,7 +57,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// --- Helper functions ---
+// --- Helper functions (encrypt/decrypt kept for your DB usage) ---
 function encrypt(text) {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', AES_KEY, iv);
@@ -116,14 +120,14 @@ function redirectIfAuth(req, res, next) {
   }
 }
 
-// --- Routes ---
+// --- Routes (simple ones) ---
 app.get('/', (req, res) => res.render('home', { csrfToken: res.locals.csrfToken, user: null }));
 app.get('/home', (req, res) => res.render('home', { csrfToken: res.locals.csrfToken, user: null }));
 app.get('/about-us', (req, res) => res.render('about-us', { csrfToken: res.locals.csrfToken }));
 app.get('/contact', (req, res) => res.render('contact', { csrfToken: res.locals.csrfToken }));
 app.get('/forgot-password', (req, res) => res.render('forgot-password', { csrfToken: res.locals.csrfToken }));
 
-// --- Settings ---
+// --- Settings page ---
 app.get("/settings", requireAuth, (req, res) => {
   const userSettings = getSettings(req.user.id);
   res.render("settings", {
@@ -132,75 +136,156 @@ app.get("/settings", requireAuth, (req, res) => {
     userSettings,
   });
 });
-const multer = require("multer");
-const fs = require("fs");
-// --- Multer setup for uploads ---
+
+// ---------------- Multer setup ----------------
+const userImagesDir = path.join(__dirname, "database/user-images");
+if (!fs.existsSync(userImagesDir)) fs.mkdirSync(userImagesDir, { recursive: true });
+
 const upload = multer({
-  dest: path.join(__dirname, "database/user-images"),
-  limits: { fileSize: 2 * 1024 * 1024 }, // 2MB max
+  dest: userImagesDir,
+  limits: { fileSize: 1024 * 1024 }, // 1 MB max upload
   fileFilter: (req, file, cb) => {
     if (!file.mimetype.startsWith("image/")) {
-      return cb(new Error("Only images allowed"));
+      return cb(new multer.MulterError('LIMIT_UNEXPECTED_FILE', 'Only images allowed'));
     }
     cb(null, true);
   }
 });
 
-// --- Change PFP ---
-app.post("/settings/pfp", requireAuth, upload.single("pfp"), (req, res) => {
-  const userId = req.user.id;
+// --- Multer error handling middleware ---
+function uploadErrorHandler(err, req, res, next) {
+  const user = req.user || null;
+  if (err instanceof multer.MulterError) {
+    let msg = "⚠️ Upload failed.";
+    if (err.code === "LIMIT_FILE_SIZE") msg = "❌ File too large. Max 1MB allowed.";
+    else if (err.code === "LIMIT_UNEXPECTED_FILE") msg = "❌ Only image uploads are allowed.";
+    else msg = `❌ Upload error: ${err.message}`;
 
-  try {
-    const { canChangePfp, updateSettings, deletePfp } = require("./userSettings");
-    if (!canChangePfp(userId)) {
-      return res.status(429).send("❌ You can only change PFP 6 times every 10 minutes.");
-    }
-
-    // Delete old pfp if custom
-    deletePfp(userId);
-
-    // Save new filename
-    const filename = req.file.filename + path.extname(req.file.originalname);
-    const fs = require("fs");
-    fs.renameSync(req.file.path, path.join(__dirname, "database/user-images", filename));
-
-    updateSettings(userId, { pfp: "/user-images/" + filename });
-
-    res.redirect("/settings");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("⚠️ Upload failed.");
+    return res.status(400).render("settings", {
+      csrfToken: req.csrfToken(),
+      user,
+      userSettings: user ? getSettings(user.id) : {},
+      error: msg
+    });
   }
-});
+  if (err) {
+    return res.status(400).render("settings", {
+      csrfToken: req.csrfToken(),
+      user,
+      userSettings: user ? getSettings(user.id) : {},
+      error: "❌ Upload error: " + err.message
+    });
+  }
+  next();
+}
 
-// --- Change Username ---
+// --- Track PFP change attempts (in-memory) ---
+const pfpChangeLog = {};
+function canChangePfp(userId) {
+  const now = Date.now();
+  if (!pfpChangeLog[userId]) pfpChangeLog[userId] = [];
+  pfpChangeLog[userId] = pfpChangeLog[userId].filter(ts => now - ts < 10 * 60 * 1000);
+  if (pfpChangeLog[userId].length >= 5) return false;
+  pfpChangeLog[userId].push(now);
+  return true;
+}
+
+// ---------------- Change PFP route with sharp ----------------
+app.post(
+  "/settings/pfp",
+  requireAuth,
+  upload.single("pfp"),
+  uploadErrorHandler,
+  async (req, res) => {
+    const userId = req.user.id;
+
+    try {
+      if (!req.file) {
+        return res.status(400).render("settings", {
+          csrfToken: res.locals.csrfToken,
+          user: req.user,
+          userSettings: getSettings(userId),
+          error: "❌ No file uploaded."
+        });
+      }
+
+      if (!canChangePfp(userId)) {
+        try { fs.unlinkSync(req.file.path); } catch {}
+        return res.status(429).render("settings", {
+          csrfToken: res.locals.csrfToken,
+          user: req.user,
+          userSettings: getSettings(userId),
+          error: "❌ You can only change PFP 5 times every 10 minutes."
+        });
+      }
+
+      // Delete old picture
+      deletePfp(userId);
+
+      // Generate new filename
+      const filename = crypto.randomBytes(12).toString("hex") + ".jpg";
+      const filepath = path.join(userImagesDir, filename);
+
+      // ✅ Resize and compress image before saving
+      await sharp(req.file.path)
+        .resize(500, 500, { fit: "inside" })
+        .jpeg({ quality: 80 })
+        .toFile(filepath);
+
+      fs.unlinkSync(req.file.path); // delete temp upload
+
+      updateSettings(userId, { pfp: "/user-images/" + filename });
+
+      res.redirect("/settings");
+    } catch (err) {
+      console.error(err);
+      if (req.file && req.file.path && fs.existsSync(req.file.path)) {
+        try { fs.unlinkSync(req.file.path); } catch {}
+      }
+      res.status(500).render("settings", {
+        csrfToken: res.locals.csrfToken,
+        user: req.user,
+        userSettings: getSettings(userId),
+        error: "⚠️ Upload failed."
+      });
+    }
+  }
+);
+
+// ---------------- Change username ----------------
 app.post("/settings/username", requireAuth, (req, res) => {
   const userId = req.user.id;
   const newUsername = req.body.newUsername;
 
   if (!newUsername || newUsername.trim().length < 3) {
-    return res.status(400).send("❌ Username too short.");
+    return res.status(400).render("settings", {
+      csrfToken: res.locals.csrfToken,
+      user: req.user,
+      userSettings: getSettings(userId),
+      error: "❌ Username too short."
+    });
   }
 
-  const { canChangeUsername, updateSettings } = require("./userSettings");
   if (!canChangeUsername(userId)) {
-    return res.status(429).send("❌ You can only change username once per week.");
+    return res.status(429).render("settings", {
+      csrfToken: res.locals.csrfToken,
+      user: req.user,
+      userSettings: getSettings(userId),
+      error: "❌ You can only change username once per week."
+    });
   }
 
   updateSettings(userId, { username: newUsername.trim() });
-
   res.redirect("/settings");
 });
-
 
 // --- Chat ---
 app.get('/chat', requireAuth, (req, res) =>
   res.render('chat', { csrfToken: res.locals.csrfToken, user: req.user })
 );
 
-// --- SIGNUP ---
+// --- SIGNUP / LOGIN / LOGOUT (unchanged except updateSettings default) ---
 const lastRegistrationByIP = {};
-
 app.get('/signup', redirectIfAuth, (req, res) =>
   res.render('signup', { csrfToken: res.locals.csrfToken })
 );
@@ -255,10 +340,9 @@ app.post('/signup', authLimiter, async (req, res) => {
             });
           }
 
-          // ✅ Save default settings in LowDB
           updateSettings(this.lastID, {
             username: username,
-            pfp: "/images/icon-user.png" // default profile picture
+            pfp: "/images/icon-user.png"
           });
 
           lastRegistrationByIP[ip] = Date.now();
@@ -275,7 +359,6 @@ app.post('/signup', authLimiter, async (req, res) => {
   });
 });
 
-// --- LOGIN ---
 app.get('/login', redirectIfAuth, (req, res) =>
   res.render('login', { csrfToken: res.locals.csrfToken })
 );
@@ -309,23 +392,17 @@ app.post('/login', authLimiter, async (req, res) => {
       httpOnly: true,
       secure: IN_PROD,
       sameSite: 'lax',
-      maxAge: 1000 * 60 * 60 * 2 // 2 hours
+      maxAge: 1000 * 60 * 60 * 2
     });
 
     res.redirect('/chat');
   });
 });
 
-// --- LOGOUT ---
 app.post('/logout', (req, res) => {
   res.clearCookie('token');
   res.redirect('/');
 });
-
-// --- Protected test route ---
-app.get('/protected', requireAuth, (req, res) =>
-  res.render('protected', { user: req.user })
-);
 
 // --- Start server ---
 app.listen(PORT, () => {

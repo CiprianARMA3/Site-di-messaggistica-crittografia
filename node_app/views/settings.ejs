@@ -36,20 +36,23 @@
             <div class="main">
                 <% if (user) { %>
                     <img src="<%= userSettings.pfp %>" alt="User Profile">
+                    <% if (typeof error !== "undefined") { %>
+                        <div class="error-box"><%= error %></div>
+                        <% } %>
                         <!-- Change PFP -->
-<!-- settings.ejs (multipart form) -->
-<form action="/settings/pfp?_csrf=<%= encodeURIComponent(csrfToken) %>" method="post" enctype="multipart/form-data">
-  <!-- note: for multipart we put token in query so csurf can read it before multer -->
-  <input type="file" name="pfp" accept="image/*" required>
-  <button type="submit">Change Profile Picture</button>
-</form>
+                        <!-- settings.ejs (multipart form) -->
+                        <form action="/settings/pfp?_csrf=<%= encodeURIComponent(csrfToken) %>" method="post" enctype="multipart/form-data">
+                        <!-- note: for multipart we put token in query so csurf can read it before multer -->
+                        <input type="file" name="pfp" accept="image/*" required>
+                        <button type="submit">Change Profile Picture</button>
+                        </form>
 
-    <!-- Change Username -->
-    <form action="/settings/username" method="post">
-      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-      <input type="text" name="newUsername" placeholder="New username" required>
-      <button type="submit">Change Username</button>
-    </form>
+                            <!-- Change Username -->
+                            <form action="/settings/username" method="post">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+                            <input type="text" name="newUsername" placeholder="New username" required>
+                            <button type="submit">Change Username</button>
+                            </form>
 
                 <% } else { %>
                         <script>
