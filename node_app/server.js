@@ -532,6 +532,10 @@ app.post('/logout', (req, res) => {
   res.redirect('/');
 });
 
+app.use((req, res) => {
+  res.status(404).render('404', { csrfToken: res.locals.csrfToken });
+});
+
 // --- Start server ---
 app.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
