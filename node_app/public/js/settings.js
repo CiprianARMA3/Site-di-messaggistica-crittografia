@@ -38,3 +38,23 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const fileInput = document.getElementById("pfp");
+  const previewImg = document.getElementById("profile-preview");
+
+  if (fileInput && previewImg) {
+    fileInput.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (file && file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          previewImg.src = e.target.result; // Set preview
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+});
+

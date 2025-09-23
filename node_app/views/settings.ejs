@@ -33,7 +33,7 @@
 
 <div class="main">
   <% if (user) { %>
-    <img src="<%= userSettings.pfp %>" alt="User Profile">
+<img src="<%= userSettings.pfp %>" alt="User Profile" id="profile-preview">
 
     <% if (typeof error !== "undefined") { %>
       <div class="error-box"><%= error %></div>
