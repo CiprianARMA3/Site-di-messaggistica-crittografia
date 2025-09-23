@@ -32,6 +32,7 @@ db.serialize(() => {
       password TEXT NOT NULL,
       email TEXT NOT NULL,
       email_hash TEXT NOT NULL,
+      banned INTEGER NOT NULL DEFAULT 0, -- 0 = not banned, 1 = banned
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
 });

@@ -95,6 +95,7 @@ function generateToken(user) {
   );
 }
 
+// --- Auth middleware with ban check ---
 function requireAuth(req, res, next) {
   const token = req.cookies.token;
   if (!token) return res.redirect('/login');
@@ -102,7 +103,16 @@ function requireAuth(req, res, next) {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
-    next();
+
+    db.get("SELECT banned FROM database_utenti WHERE id = ?", [decoded.id], (err, row) => {
+      if (err || !row) return res.redirect('/login');
+      if (row.banned === 1) {
+        res.clearCookie('token');
+        return res.redirect('/ban');
+      }
+      next();
+    });
+
   } catch {
     return res.redirect('/login');
   }
@@ -126,6 +136,11 @@ app.get('/home', (req, res) => res.render('home', { csrfToken: res.locals.csrfTo
 app.get('/about-us', (req, res) => res.render('about-us', { csrfToken: res.locals.csrfToken }));
 app.get('/contact', (req, res) => res.render('contact', { csrfToken: res.locals.csrfToken }));
 app.get('/forgot-password', (req, res) => res.render('forgot-password', { csrfToken: res.locals.csrfToken }));
+
+// --- Ban page ---
+app.get('/ban', (req, res) => {
+  res.render('ban', { csrfToken: res.locals.csrfToken });
+});
 
 // --- Settings page ---
 app.get("/settings", requireAuth, (req, res) => {
@@ -279,12 +294,93 @@ app.post("/settings/username", requireAuth, (req, res) => {
   res.redirect("/settings");
 });
 
+// ---------------- Change password ----------------
+const passwordChangeLog = {};
+function canChangePassword(userId) {
+  const now = Date.now();
+  const oneWeek = 7 * 24 * 60 * 60 * 1000;
+  if (!passwordChangeLog[userId]) return true;
+  return now - passwordChangeLog[userId] >= oneWeek;
+}
+function logPasswordChange(userId) {
+  passwordChangeLog[userId] = Date.now();
+}
+
+app.post("/settings/password", requireAuth, async (req, res) => {
+  const userId = req.user.id;
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    return res.status(400).render("settings", {
+      csrfToken: req.csrfToken(),
+      user: req.user,
+      userSettings: getSettings(userId),
+      error: "❌ Please fill in all fields."
+    });
+  }
+
+  if (!canChangePassword(userId)) {
+    return res.status(429).render("settings", {
+      csrfToken: req.csrfToken(),
+      user: req.user,
+      userSettings: getSettings(userId),
+      error: "❌ You can only change password once per week."
+    });
+  }
+
+  try {
+    db.get("SELECT password FROM database_utenti WHERE id = ?", [userId], async (err, row) => {
+      if (err || !row) {
+        return res.status(500).render("settings", {
+          csrfToken: req.csrfToken(),
+          user: req.user,
+          userSettings: getSettings(userId),
+          error: "⚠️ Server error."
+        });
+      }
+
+      const match = await bcrypt.compare(currentPassword, row.password);
+      if (!match) {
+        return res.status(400).render("settings", {
+          csrfToken: req.csrfToken(),
+          user: req.user,
+          userSettings: getSettings(userId),
+          error: "❌ Current password is incorrect."
+        });
+      }
+
+      const hashed = await bcrypt.hash(newPassword, SALT_ROUNDS);
+      db.run("UPDATE database_utenti SET password = ? WHERE id = ?", [hashed, userId], (err2) => {
+        if (err2) {
+          return res.status(500).render("settings", {
+            csrfToken: req.csrfToken(),
+            user: req.user,
+            userSettings: getSettings(userId),
+            error: "⚠️ Could not update password."
+          });
+        }
+
+        logPasswordChange(userId);
+        res.redirect("/settings");
+      });
+    });
+  } catch (e) {
+    console.error(e);
+    return res.status(500).render("settings", {
+      csrfToken: req.csrfToken(),
+      user: req.user,
+      userSettings: getSettings(userId),
+      error: "⚠️ Unexpected error."
+    });
+  }
+});
+
 // --- Chat ---
 app.get('/chat', requireAuth, (req, res) =>
   res.render('chat', { csrfToken: res.locals.csrfToken, user: req.user })
 );
 
-// --- SIGNUP / LOGIN / LOGOUT (unchanged except updateSettings default) ---
+// --- SIGNUP / LOGIN / LOGOUT ---
 const lastRegistrationByIP = {};
 app.get('/signup', redirectIfAuth, (req, res) =>
   res.render('signup', { csrfToken: res.locals.csrfToken })
@@ -330,7 +426,7 @@ app.post('/signup', authLimiter, async (req, res) => {
       const encEmail = encrypt(email);
 
       db.run(
-        "INSERT INTO database_utenti(username,password,email,email_hash) VALUES (?,?,?,?)",
+        "INSERT INTO database_utenti(username,password,email,email_hash,banned) VALUES (?,?,?,?,0)",
         [encUsername, hashedPassword, encEmail, email_hash],
         function (err2) {
           if (err2) {
@@ -376,6 +472,10 @@ app.post('/login', authLimiter, async (req, res) => {
   db.get("SELECT * FROM database_utenti WHERE email_hash = ?", [email_hash], async (err, user) => {
     if (err) return res.status(500).render('login', { csrfToken: res.locals.csrfToken, error: 'Server error.' });
     if (!user) return res.status(401).render('login', { csrfToken: res.locals.csrfToken, error: 'Invalid credentials.' });
+
+    if (user.banned === 1) {
+      return res.redirect('/ban');
+    }
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).render('login', { csrfToken: res.locals.csrfToken, error: 'Invalid credentials.' });

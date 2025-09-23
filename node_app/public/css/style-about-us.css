@@ -149,20 +149,23 @@ html, body {
 
 .footer {
   grid-area: footer;
-  background-color: rgb(49, 47, 47);
-  display: flex;
-  justify-content: space-between;
-  padding: 0.2rem;
+  text-align: center;
+  padding: 1rem;
+  background: transparent;
   font-size: 0.9rem;
-  overflow: hidden;
-  position: relative;
-  z-index: 5;
+  color: #bbb;
 }
-
+#container-logo {
+  margin-top: 0.5rem;
+}
 .footer-logos {
-  height: 20px;
-  width: auto;
-  margin-left: 50px;
+  height: 25px;
+  margin: 0 8px;
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+.footer-logos:hover {
+  transform: scale(1.2);
+  filter: drop-shadow(0 0 5px rgba(255,255,255,0.4));
 }
 a{
   color: #1c86ee;

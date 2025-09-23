@@ -1,9 +1,7 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>
-            Settings
-        </title>
+        <title>Settings</title>
         <link rel="icon" href="/images/logo-white.png">
 
         <meta charset="UTF-8">
@@ -13,7 +11,7 @@
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&display=swap" rel="stylesheet">
-                <link rel="icon" href="/images/logo-white.png">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     </head>
     <body>
         <div class="corner-light2-about-us-page"></div>
@@ -27,42 +25,89 @@
                     <ul class="menu">
                         <li><a href="/home">Home</a></li>
                         <li><a href="/about-us">About Us</a></li>
-                        <li><a href="/contact" >Contacts</a></li>
+                        <li><a href="/contact">Contacts</a></li>
                         <li><a href="/settings" id="selected-menu">Settings</a></li>
                     </ul>
                 </nav>
             </div>
 
-            <div class="main">
-                <% if (user) { %>
-                    <img src="<%= userSettings.pfp %>" alt="User Profile">
-                    <% if (typeof error !== "undefined") { %>
-                        <div class="error-box"><%= error %></div>
-                        <% } %>
-                        <!-- Change PFP -->
-                        <!-- settings.ejs (multipart form) -->
-                        <form action="/settings/pfp?_csrf=<%= encodeURIComponent(csrfToken) %>" method="post" enctype="multipart/form-data">
-                        <!-- note: for multipart we put token in query so csurf can read it before multer -->
-                        <input type="file" name="pfp" accept="image/*" required>
-                        <button type="submit">Change Profile Picture</button>
-                        </form>
+<div class="main">
+  <% if (user) { %>
+    <img src="<%= userSettings.pfp %>" alt="User Profile">
 
-                            <!-- Change Username -->
-                            <form action="/settings/username" method="post">
-                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
-                            <input type="text" name="newUsername" placeholder="New username" required>
-                            <button type="submit">Change Username</button>
-                            </form>
+    <% if (typeof error !== "undefined") { %>
+      <div class="error-box"><%= error %></div>
+    <% } %>
 
-                <% } else { %>
-                        <script>
-                            window.location.href = "/login";
-                            </script>
-                     <% } %>
-            </div>
+    <!-- Settings Tabs -->
+    <div class="settings-tabs">
+      <button class="tab-button active" data-tab="appearance"><i class="fa-solid fa-paintbrush"></i> Appearance</button>
+      <button class="tab-button" data-tab="account"><i class="fa-solid fa-user"></i> Account Data</button>
+      <button class="tab-button" data-tab="legal"><i class="fa-solid fa-scale-balanced"></i> Legal</button>
+    </div>
+
+    <!-- Appearance -->
+    <div class="settings-box tab-content active" id="appearance">
+      <h3><i class="fa-solid fa-paintbrush"></i> Appearance</h3>
+      <form action="/settings/pfp?_csrf=<%= encodeURIComponent(csrfToken) %>" method="post" enctype="multipart/form-data">
+        <input type="file" name="pfp" id="pfp" accept="image/*" required hidden>
+        <label for="pfp" class="custom-file-upload">
+          <i class="fa-solid fa-camera"></i> Choose Profile Picture
+        </label>
+        <button type="submit">Change Profile Picture</button>
+      </form>
+      <form action="/settings/username" method="post">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <input type="text" name="newUsername" placeholder="New Viewed Name" required>
+        <button type="submit">Change Name</button>
+      </form>
+    </div>
+
+    <!-- Account Data -->
+    <div class="settings-box tab-content" id="account">
+      <h3><i class="fa-solid fa-user"></i> Account Data</h3>
+      <div class="readonly-field">
+        <label>Username</label>
+        <input type="text" value="<%= user.username %>" readonly>
+      </div>
+      <div class="readonly-field">
+        <label>Email</label>
+        <input type="text" value="<%= user.email %>" readonly>
+      </div>
+      <form action="/settings/password" method="post">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <label>Change Password</label>
+        <input type="password" name="currentPassword" placeholder="Current Password" required>
+        <input type="password" name="newPassword" placeholder="New Password" required>
+        <button type="submit">Change Password</button>
+      </form>
+    </div>
+
+    <!-- Legal -->
+    <div class="settings-box tab-content" id="legal">
+      <h3><i class="fa-solid fa-scale-balanced"></i> Legal</h3>
+      <ul class="legal-links">
+        <li><a href="/tos">Terms of Service</a></li>
+        <li><a href="/cookies">Cookie Policy</a></li>
+        <li><a href="/legal">Legal Inquiries</a></li>
+      </ul>
+    </div>
+        <div class="logout-container">
+  <form action="/logout" method="POST">
+    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+    <button type="submit" id="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Logout</button>
+  </form>
+</div>
+
+
+  <% } else { %>
+    <script>window.location.href = "/login";</script>
+  <% } %>
+</div>
+
+
             <div class="footer">
                 <p id="version-getter">customerhelp-feup@protonmail.com</p>
-                
                 <div id="container-logo">
                     <a href="#"><img src="/images/instagram-logo.png" alt="logo" class="footer-logos"></a>
                     <a href="https://discord.gg/hvpJrx2tK7"><img src="/images/discord-logo.webp" alt="logo" class="footer-logos"></a>
