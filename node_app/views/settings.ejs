@@ -58,6 +58,8 @@
       </form>
       <form action="/settings/username" method="post">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <label>Currently Viewed Name:</label>
+          <input type="text" value="<%= userSettings.username || user.username %>" class="read-only-name" readonly style="color: grey;">
         <input type="text" name="newUsername" placeholder="New Viewed Name" required>
         <button type="submit">Change Name</button>
       </form>

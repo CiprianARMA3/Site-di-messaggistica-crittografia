@@ -106,10 +106,12 @@ function requireAuth(req, res, next) {
 
     db.get("SELECT banned FROM database_utenti WHERE id = ?", [decoded.id], (err, row) => {
       if (err || !row) return res.redirect('/login');
-      if (row.banned === 1) {
-        res.clearCookie('token');
-        return res.redirect('/ban');
-      }
+
+      // 🔒 Treat both 1 and null as banned
+        if (row.banned === 1) {
+          res.clearCookie('token');
+          return res.redirect('/ban');
+        }
       next();
     });
 
@@ -137,9 +139,33 @@ app.get('/about-us', (req, res) => res.render('about-us', { csrfToken: res.local
 app.get('/contact', (req, res) => res.render('contact', { csrfToken: res.locals.csrfToken }));
 app.get('/forgot-password', (req, res) => res.render('forgot-password', { csrfToken: res.locals.csrfToken }));
 
-// --- Ban page ---
 app.get('/ban', (req, res) => {
-  res.render('ban', { csrfToken: res.locals.csrfToken });
+  const token = req.cookies.token;
+  if (!token) {
+    // No login → show ban page
+    return res.render('ban', { csrfToken: res.locals.csrfToken });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    db.get("SELECT banned FROM database_utenti WHERE id = ?", [decoded.id], (err, row) => {
+      if (err || !row) {
+        // DB error or no user → show ban page
+        return res.render('ban', { csrfToken: res.locals.csrfToken });
+      }
+
+      if (row.banned === 1) {
+        // 🚫 Still banned → show ban page
+        return res.render('ban', { csrfToken: res.locals.csrfToken });
+      }
+
+      // ✅ Not banned → redirect home
+      return res.redirect('/home');
+    });
+  } catch {
+    // Invalid token → show ban page
+    return res.render('ban', { csrfToken: res.locals.csrfToken });
+  }
 });
 
 // --- Settings page ---
@@ -473,9 +499,11 @@ app.post('/login', authLimiter, async (req, res) => {
     if (err) return res.status(500).render('login', { csrfToken: res.locals.csrfToken, error: 'Server error.' });
     if (!user) return res.status(401).render('login', { csrfToken: res.locals.csrfToken, error: 'Invalid credentials.' });
 
+    // ✅ Only 1 means banned
     if (user.banned === 1) {
       return res.redirect('/ban');
     }
+
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).render('login', { csrfToken: res.locals.csrfToken, error: 'Invalid credentials.' });

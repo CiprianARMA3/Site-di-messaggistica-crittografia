@@ -389,8 +389,7 @@ form button:hover {
 /* Logout container */
 /* Logout container inside main */
 .logout-container {
-  margin-top: 2rem;        /* space from last settings box */
-  margin-bottom: 2rem;     /* space before footer */
+  margin-top: 0.5rem;        /* space from last settings box */
   display: flex;
   justify-content: center; /* center horizontally */
 }
@@ -409,10 +408,21 @@ form button:hover {
   transition: all 0.3s ease;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 8px; 
 }
 
 #logout-btn:hover {
   background: #e74c3c;
   box-shadow: 0 0 12px rgba(231, 76, 60, 0.6);
+}
+
+.read-only-name {
+  width: 100%;
+  padding: 0.6rem;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.1); /* subtle background */
+  border: none;
+  color: #aaa; /* grey text */
+  font-size: 1rem;
+  cursor: not-allowed; /* show it's not editable */
 }
