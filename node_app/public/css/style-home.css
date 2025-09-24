@@ -50,7 +50,9 @@
       overflow: visible;
       position: relative;
       /* background: linear-gradient(135deg, #0d1c34, #121212); */
-
+      padding: 5rem 2rem
+32px
+ 2rem;
 
     }
 
