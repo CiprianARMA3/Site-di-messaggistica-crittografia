@@ -46,58 +46,54 @@ body::after {
 
 /* Header */
 .header {
-  grid-area: header;
-  background: transparent;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 1rem;
-  font-size: 1.5rem;
-  font-weight: bold;
-  gap: 1rem;
-  position: relative;
-  z-index: 1;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  z-index: 10;
+
+  background: rgba(18, 18, 18, 0.55);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
+
 .header .logo {
-  height: 50px;
-  width: auto;
-  opacity: 0.5;
+  height: 42px;
   position: absolute;
-  left: 1rem;
+  left: 1.5rem;
+  opacity: 0.85;
   pointer-events: none;
 }
 
-/* Menu */
 .menu {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  max-width: 720px;
-  margin: 0 auto;
   list-style: none;
+  gap: 1.8rem;
 }
-.menu li {
-  width: 125px;
-  height: 50px;
-  text-align: center;
-  transition: background-position-x 0.9s linear;
-}
+
 .menu li a {
-  font-size: 22px;
+  font-size: 17px;
+  font-weight: 600;
   color: #ececec;
   text-decoration: none;
-  transition: all 0.45s;
+  transition: color 0.3s;
 }
-.menu li:hover a {
+
+.menu li a:hover {
   color: #1e90ff;
 }
-.menu li:not(:last-child) {
-  margin-right: 30px;
-}
+
 #selected-menu {
-  color: #1c86ee;
-  text-shadow: 0 0 10px rgba(255,255,255,0.3);
+  color: #1e90ff;
+  text-shadow: 0 0 10px rgba(30,144,255,0.6);
 }
+
 #selected-menu:hover {
   color: white;
   text-shadow: 0 0 10px rgba(255,255,255,0.3);
@@ -112,7 +108,7 @@ body::after {
   align-items: center;
   position: relative;
   overflow-y: auto;
-  padding: 2rem;
+    padding: 5rem 2rem 2rem; /* ⬅ increased top padding */
   gap: 1.5rem;
 }
 
@@ -302,20 +298,7 @@ form button:hover {
   filter: drop-shadow(0 0 5px rgba(255,255,255,0.4));
 }
 
-/* Corner light animation */
-.corner-light2-about-us-page {
-  position: absolute;
-  top: 0;
-  left: -2px;
-  width: 90px;
-  height: 90px;
-  pointer-events: none;
-  background: radial-gradient(circle, rgba(99, 179, 237, 1) 0%, rgba(255,255,255,0) 70%);
-  filter: blur(30px);
-  z-index: 0;
-  opacity: 0;
-  animation: fadePulse 6s ease-in-out infinite;
-}
+
 @keyframes fadePulse {
   0%   { opacity: 0; }
   50%  { opacity: 1; }
