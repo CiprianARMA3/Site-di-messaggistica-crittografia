@@ -76,7 +76,8 @@ body::after {
   justify-content: center;
   align-items: center;
   position: relative;
-  /* background: linear-gradient(135deg, #0d1c34, #121212); */
+  background: linear-gradient(135deg, #121212, #0d1c34);
+  /* first :#0d1c34; second:#121212   */
   overflow: visible;
 }
 
@@ -93,27 +94,17 @@ body::after {
   text-decoration: none;
   transition: color 0.3s;
 }
-
 .menu li a:hover {
   color: #1e90ff;
 }
 
-
-#selected-menu {
-  color: #1e90ff;
-  text-shadow: 0 0 10px rgba(30,144,255,0.6);
-}
-
-
 #selected-menu {
   color: #1c86ee;
-    text-shadow: 0 0 10px rgba(255,255,255,0.3);
-
+  text-shadow: 0 0 10px rgba(255,255,255,0.3);
 }
 #selected-menu:hover {
   color: white;
-    text-shadow: 0 0 10px rgba(255,255,255,0.3);
-
+  text-shadow: 0 0 10px rgba(255,255,255,0.3);
 }
 
 /* Logo effects */
@@ -176,11 +167,12 @@ body::after {
   color: #fff;
 }
 .feature {
-  background: rgba(60,60,60,0.6);
-  border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 15px;
   padding: 1.5rem;
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   position: relative;
   z-index: 10;
@@ -207,12 +199,13 @@ body::after {
 .hero2 {
   margin-top: 1rem;
   padding: 3rem 2rem;
-  background: rgba(60,60,60,0.6);
-  border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 15px;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.5), 
-              0 0 25px rgba(255,255,255,0.2);
-  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.4),
+              0 0 25px rgba(255,255,255,0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   color: #fff;
   grid-column: 1 / -1; 
   width: 100%;
@@ -224,7 +217,7 @@ body::after {
 }
 .hero2:hover {
   transform: translateY(-6px);
-  box-shadow: 0 0 20px rgba(255,255,255,0.2);
+  box-shadow: 0 0 25px rgba(255,255,255,0.25);
 }
 .hero2 h1 {
   font-size: 2rem;

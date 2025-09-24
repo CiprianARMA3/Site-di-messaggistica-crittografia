@@ -263,3 +263,19 @@ html, body {
   color: #ee1c1c;
 }
 
+
+
+/* For Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* For Firefox */
+html {
+  scrollbar-width: none;
+}
+
+/* For IE/Edge (old versions) */
+body {
+  -ms-overflow-style: none;
+}

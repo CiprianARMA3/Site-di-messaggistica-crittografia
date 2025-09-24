@@ -25,7 +25,7 @@
     }
 
 .header {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;
@@ -33,7 +33,7 @@
   justify-content: center;
   align-items: center;
   padding: 1rem 2rem;
-  font-size: 1.28rem;
+  font-size: 1.1rem;
   z-index: 10;
 
   background: rgba(18, 18, 18, 0.55);
@@ -51,8 +51,8 @@
       position: relative;
       /* background: linear-gradient(135deg, #0d1c34, #121212); */
       padding: 5rem 2rem
-32px
- 2rem;
+            32px
+            2rem;
 
     }
 
@@ -176,7 +176,6 @@
   display: flex;
   list-style: none;
   gap: 1.8rem;
-    font-weight: 600;
 }
 
 .menu li a {
@@ -184,6 +183,7 @@
   color: #ececec;
   padding: 0;
   text-decoration: none;
+    font-weight: 600;
   transition: color 0.3s;
 }
 
