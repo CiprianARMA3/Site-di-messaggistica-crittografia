@@ -14,6 +14,8 @@ html, body {
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
   scroll-padding-top: 0rem; /* must equal header height */
+  scroll-padding: 0rem;
+  scrollbar-gutter: stable; /* 🚀 fix scrollbar push issue */
 }
 
 /* Pages */
@@ -38,7 +40,7 @@ html, body {
 
 /* Header (glassy) */
 .header {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100%;

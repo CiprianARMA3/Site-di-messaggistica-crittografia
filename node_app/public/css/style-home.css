@@ -33,7 +33,7 @@
   justify-content: center;
   align-items: center;
   padding: 1rem 2rem;
-  font-size: 1.1rem;
+  font-size: 1.28rem;
   z-index: 10;
 
   background: rgba(18, 18, 18, 0.55);
@@ -49,6 +49,8 @@
       align-items: center;
       overflow: visible;
       position: relative;
+      /* background: linear-gradient(135deg, #0d1c34, #121212); */
+
 
     }
 
@@ -172,12 +174,13 @@
   display: flex;
   list-style: none;
   gap: 1.8rem;
+    font-weight: 600;
 }
 
 .menu li a {
   font-size: 17px;
-  font-weight: 600;
   color: #ececec;
+  padding: 0;
   text-decoration: none;
   transition: color 0.3s;
 }
@@ -192,9 +195,9 @@
   }
 }
 
-#selected-menu {
-  color: #1e90ff;
-  text-shadow: 0 0 10px rgba(30,144,255,0.6); /* blue glow instead of white */
+#selected-menu{
+  color: #1c86ee;
+    text-shadow: 0 0 10px rgba(255,255,255,0.3);
 }
 #selected-menu:hover   {
   color: white;

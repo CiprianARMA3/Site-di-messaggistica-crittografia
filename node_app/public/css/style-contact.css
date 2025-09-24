@@ -76,6 +76,7 @@ body::after {
   justify-content: center;
   align-items: center;
   position: relative;
+  /* background: linear-gradient(135deg, #0d1c34, #121212); */
   overflow: visible;
 }
 
