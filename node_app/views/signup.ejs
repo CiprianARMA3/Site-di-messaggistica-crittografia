@@ -26,17 +26,19 @@
     </div>
 
     <div class="main">
+
       <div id="Box ">
+                  <div id="client-error" class="error-box" style="display:none;"></div>
+                <% if (typeof error !== 'undefined') { %>
+            <div class="error-box"><%= error %></div>
+          <% } %>
+
         <!-- NOTE: novalidate so we show our custom popup instead of native browser bubbles -->
         <form id="signup-form" action="/signup" method="POST" novalidate>
           <input type="hidden" name="_csrf" value="<%= csrfToken %>">
 
-          <% if (typeof error !== 'undefined') { %>
-            <div class="error-box"><%= error %></div>
-          <% } %>
 
           <!-- client-side error placeholder -->
-          <div id="client-error" class="error-box" style="display:none;"></div>
 
           <p></p>
           <p class="shiny-ahh-text">Username</p>

@@ -36,11 +36,12 @@
 
             <div class="main">
                 <div id="accedere">
+                                                                                <% if (typeof error !== 'undefined') { %>
+                        <div class="error-box"><%= error %></div>
+                        <% } %>   
                     <form action="/login" method="POST">
                         <input type="hidden" name="_csrf" value="<%= csrfToken %>">   
-                        <% if (typeof error !== 'undefined') { %>
-                        <div class="error-box"><%= error %></div>
-                        <% } %>                     
+                 
                         <p></p>
                         <p class="shiny-ahh-text">E-Mail</p>
                         <input type="text" id="username-box" name="email" required>
@@ -51,10 +52,12 @@
                         <a href="/signup" class="shiny-ahh-text"> Register</a>
                         <a href="/forgot-password"class="shiny-ahh-text">Forgot Password</a>
                     </form>
+ 
                     <div class="logo-container">
                     </div>
                 </div>
             </div>
+            
 
             <div class="footer">
                 <p id="version-getter"></p>
