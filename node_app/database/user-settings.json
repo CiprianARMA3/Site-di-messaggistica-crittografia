@@ -5,7 +5,9 @@
   },
   "3": {
     "username": "CiprianAdminT2",
-    "pfp": "node_app/public/images/images/icon-user.png"
+    "pfp": "node_app/public/images/images/icon-user.png",
+    "pfpChanges": [],
+    "lastUsernameChange": 0
   },
   "4": {
     "username": "CiprianAdminT3",
@@ -22,5 +24,23 @@
       1758542576495,
       1758542590275
     ]
+  },
+  "6": {
+    "username": "testetst",
+    "pfp": "/images/icon-user.png",
+    "pfpChanges": [],
+    "lastUsernameChange": 0
+  },
+  "7": {
+    "username": "sadasd@asasas.it",
+    "pfp": "/images/icon-user.png",
+    "pfpChanges": [],
+    "lastUsernameChange": 0
+  },
+  "8": {
+    "username": "CiprianAdmin",
+    "pfp": "/images/icon-user.png",
+    "pfpChanges": [],
+    "lastUsernameChange": 0
   }
 }

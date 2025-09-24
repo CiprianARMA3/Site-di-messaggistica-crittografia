@@ -8,7 +8,7 @@ const dbPath = path.resolve(__dirname, "../database/database.sqlite");
 
 console.log("Opening SQLite database at:", dbPath);
 
-// OPEN_CREATE makes sure the file is created if missing
+// OPEN_CREATE fa si che il file viene creato se mancante
 const db = new sqlite3.Database(
   dbPath,
   sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE,

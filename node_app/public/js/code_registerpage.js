@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const passwordInput = document.getElementById("password-box");
   const togglePassword = document.getElementById("toggle-password");
   const versionGetter = document.getElementById("version-getter");
+  const tosCheckbox = document.getElementById("tos-checkbox");
 
   // Version (footer)
   const versione = "customerhelp-feup@protonmail.com";
@@ -25,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Helper to show an error
+  // Helpers
   function showError(msg) {
     if (!errorBox) return;
     errorBox.innerText = msg;
@@ -87,6 +88,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (password.length > 64) {
         e.preventDefault();
         showError("Password must be at most 64 characters.");
+        return;
+      }
+
+      // ✅ TOS requirement
+      if (!tosCheckbox?.checked) {
+        e.preventDefault();
+        showError("You must accept the Terms of Service to continue.");
         return;
       }
     });

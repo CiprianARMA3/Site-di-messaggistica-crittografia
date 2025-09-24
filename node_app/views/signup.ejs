@@ -41,15 +41,18 @@
           <p></p>
           <p class="shiny-ahh-text">Username</p>
           <input type="text" id="username-box" name="username" maxlength="16" required>
-
-          <p id="redo-username"></p>
           <p class="shiny-ahh-text">E-Mail</p>
           <input type="email" id="email-box" name="email" placeholder=" " required>
 
           <p class="shiny-ahh-text">Password</p>
           <input type="password" id="password-box" name="password" maxlength="64" required>
           <label id="toggle-password" class="toggle-password">Show Password</label>
-
+            <div class="tos-box">
+              <input type="checkbox" id="tos-checkbox" required>
+              <label for="tos-checkbox">
+                I accept the <a href="/legal-documents/TERMS OF SERVICE.pdf" target="_blank">Terms of Service</a>
+              </label>
+          </div>
           <button id="accedere-box" type="submit">Register</button>
           <a href="/login"> Log-in</a>
         </form>

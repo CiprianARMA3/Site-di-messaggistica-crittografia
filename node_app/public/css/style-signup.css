@@ -304,3 +304,18 @@ a:hover {
 .shiny-ahh-text{
   text-shadow: 0 0 10px rgba(255,255,255,0.3);
 }
+
+.tos-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  color: #ddd;
+}
+
+.tos-box input[type="checkbox"] {
+  accent-color: #1e90ff; /* nice blue check */
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}

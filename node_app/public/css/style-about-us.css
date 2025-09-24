@@ -1,3 +1,4 @@
+/* Reset */
 * {
   margin: 0;
   padding: 0;
@@ -8,129 +9,222 @@ html, body {
   height: 100%;
   font-family: "Nunito Sans", sans-serif;
   color: white;
-  background-color: rgb(21, 20, 20);
-  overflow: hidden;
+  background-color: #151414;
+  scroll-behavior: smooth;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scroll-padding-top: 0rem; /* must equal header height */
 }
 
-.layout {
-  display: grid;
-  grid:
-    "header" auto
-    "main" 1fr
-    "footer" auto
-    / 1fr;
-  gap: 8px;
+/* Pages */
+.page {
   height: 100vh;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  scroll-snap-align: start;
+  padding: 2.5rem 2rem;
+  position: relative;
 }
 
+.page:nth-child(odd) {
+  background: linear-gradient(135deg, #0d1c34, #121212);
+}
+.page:nth-child(even) {
+  background: linear-gradient(135deg, #121212, #1f1616);
+}
+
+/* Header (glassy) */
 .header {
-  grid-area: header;
-  background-color: transparent;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 1rem;
-  font-size: 1.5rem;
-  font-weight: bold;
-  gap: 1rem;
-  position: relative;
-  z-index: 1;
+  padding: 1rem 2rem;
+  font-size: 1.1rem;
+  z-index: 10;
+
+  background: rgba(18, 18, 18, 0.55);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .header .logo {
-  height: 50px;
-  width: auto;
-  opacity: 0.5;
+  height: 42px;
   position: absolute;
-  left: 1rem;
+  left: 1.5rem;
+  opacity: 0.85;
   pointer-events: none;
 }
 
 .menu {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  max-width: 720px;
-  margin: 0 auto;
   list-style: none;
-}
-
-.menu li {
-  width: 125px;
-  height: 50px;
-  transition: background-position-x 0.9s linear;
-  text-align: center;
+  gap: 1.8rem;
 }
 
 .menu li a {
-  font-size: 22px;
+  font-size: 17px;
+  font-weight: 600;
   color: #ececec;
   text-decoration: none;
-  transition: all 0.45s;
+  transition: color 0.3s;
 }
 
-.menu li:hover {
-  animation: line 1s;
-}
-
-.menu li:hover a {
+.menu li a:hover {
   color: #1e90ff;
 }
 
-.menu li:not(:last-child) {
-  margin-right: 30px;
-}
-
 #selected-menu {
-  color: #1c86ee;
-    text-shadow: 0 0 10px rgba(255,255,255,0.3);
-
+  color: #1e90ff;
+  text-shadow: 0 0 10px rgba(30,144,255,0.6);
 }
 
-#selected-menu:hover {
-  color: white;
-    text-shadow: 0 0 10px rgba(255,255,255,0.3);
-
-}
-
-@keyframes line {
-  0% {
-    background-position-x: 390px;
-  }
-}
-
-.main {
-  grid-area: main;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  overflow: visible;
+/* Hero sections */
+.hero2 {
+  text-align: center;
+  max-width: 780px;
+  margin: 0 auto 2.2rem auto;
   position: relative;
+  padding-top: 1rem;
 }
 
-.logo-container {
-  position: absolute;
-  top: 50%;
-  left: 85%;
-  transform: translate(-40%, -30%) rotate(-10deg) skewY(0deg);
-  font-size: 18rem;
-  font-weight: 900;
-  color: rgba(0,0,0,0.05);
-  pointer-events: none;
-  z-index: 2;
-  filter: blur(8px);
-  -webkit-filter: blur(8px);
+.hero2:first-of-type {
+  padding-top: 6rem; /* ensures first hero clears fixed header */
 }
 
+.shiny-ahh-text {
+  font-size: 2.7rem;
+  font-weight: 800;
+  margin-bottom: 0.9rem;
+  background: linear-gradient(90deg, #1e90ff, #87cefa, #ffffff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 4s infinite;
+  background-size: 200% auto;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
+
+.tagline {
+  font-size: 1.15rem;
+  line-height: 1.55;
+  color: #dcdcdc;
+}
+
+/* Features grid */
+.features {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 4 equal columns */
+  gap: 1.8rem;
+  max-width: 1200px;
+  margin: 0 auto 2.2rem auto;
+}
+
+/* More top padding for "How we protect your data" (the 3rd box) */
+.features .feature:nth-child(3) h3 {
+  margin-top: 1.2rem;
+}
+.features .feature:nth-child(3) p {
+  margin-top: 0.8rem;
+}
+
+.feature {
+  background: rgba(255,255,255,0.05);
+  padding: 2rem 1.7rem 2.2rem 1.7rem; /* extra bottom padding */
+  border-radius: 1rem;
+  text-align: center;
+  transition: transform 0.35s ease, background 0.3s ease, box-shadow 0.35s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.22);
+}
+
+.feature:hover {
+  transform: translateY(-12px);
+  background: rgba(255,255,255,0.12);
+  box-shadow: 0 12px 25px rgba(0,0,0,0.36);
+}
+
+.feature i {
+  font-size: 1.9rem;
+  color: #1e90ff;
+  margin-bottom: 0.9rem;
+}
+
+.feature h3 {
+  font-size: 1.25rem;
+  margin-bottom: 0.7rem;
+}
+
+.feature p {
+  font-size: 0.93rem;
+  color: #cfcfcf;
+  line-height: 1.45;
+}
+
+/* Support section (Glossy Red Look, no shine animation) */
+.hero2.support-section {
+  background: linear-gradient(135deg, #ff4d4d, #a60000);
+  padding: 3rem 2.5rem;
+  border-radius: 1.2rem;
+  box-shadow: 0 0 20px rgba(255, 0, 0, 0.4);
+  text-align: center;
+  max-width: 800px;
+  margin: 3rem auto;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.hero2.support-section h1 {
+  font-size: 2.4rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  color: #fff;
+  text-shadow: 0 0 12px rgba(255, 100, 100, 0.8);
+}
+
+.hero2.support-section .paragrafo-aboutus {
+  font-size: 1.05rem;
+  color: #fff;
+}
+
+.donation-details {
+  margin-top: 1.5rem;
+}
+
+.donation-details p {
+  margin: 0.5rem 0;
+  font-weight: 600;
+  color: #fff;
+}
+
+/* General Support text fallback */
+.paragrafo-aboutus {
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 1rem 0;
+  color: #e6e6e6;
+  text-align: center;
+}
+
+/* Corner Light */
 .corner-light2-about-us-page {
   position: absolute;
   top: 0;
   left: -2px;
-  width: 90px;
-  height: 90px;
-  pointer-events: none;
-  background: radial-gradient(circle, rgba(99, 179, 237, 1) 0%, rgba(255, 255, 255, 0) 70%);
-  filter: blur(30px);
+  width: 110px;
+  height: 110px;
+  background: radial-gradient(circle, rgba(99,179,237,1) 0%, rgba(255,255,255,0) 70%);
+  filter: blur(32px);
   z-index: 0;
   opacity: 0;
   animation: fadePulse 6s ease-in-out infinite;
@@ -142,32 +236,28 @@ html, body {
   100% { opacity: 0; }
 }
 
-.paragrafo-aboutus {
-  font-size: 1vw;
-  margin-left: 100px;
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.9);
 }
 
-.footer {
-  grid-area: footer;
-  text-align: center;
-  padding: 1rem;
-  background: transparent;
-  font-size: 0.9rem;
-  color: #bbb;
+/* Red shiny heading */
+.shiny2 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+  text-shadow: 0 0 10px rgba(255,255,255,0.3);
+  color: #ee1c1c;
 }
-#container-logo {
-  margin-top: 0.5rem;
-}
-.footer-logos {
-  height: 25px;
-  margin: 0 8px;
-  transition: transform 0.3s ease, filter 0.3s ease;
-}
-.footer-logos:hover {
-  transform: scale(1.2);
-  filter: drop-shadow(0 0 5px rgba(255,255,255,0.4));
-}
-a{
-  color: #1c86ee;
-  text-decoration: none;
-}
+
