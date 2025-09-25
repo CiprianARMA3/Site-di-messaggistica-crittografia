@@ -114,8 +114,8 @@ html, body {
   position: absolute;
   inset: -2px;
   border-radius: inherit;
-  background: radial-gradient(circle at top left, rgba(0,255,200,0.25), transparent 60%),
-              radial-gradient(circle at bottom right, rgba(0,120,255,0.25), transparent 60%);
+background: radial-gradient(circle at top left, rgba(0, 204, 255, 0.3), transparent 60%),
+              radial-gradient(circle at bottom right, rgba(0,120,255,0.3), transparent 60%);
   filter: blur(40px);
   z-index: -1;
 }
