@@ -122,16 +122,23 @@ function generateToken(user) {
 // --- Auth middleware with ban check ---
 function requireAuth(req, res, next) {
   const token = req.cookies.token;
-  if (!token) return res.redirect('/login');
+  if (!token) {
+    return req.xhr || req.headers.accept?.includes("application/json")
+      ? res.status(401).json({ error: "Unauthorized" })
+      : res.redirect('/login');
+  }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
 
     db.get("SELECT banned FROM database_utenti WHERE id = ?", [decoded.id], (err, row) => {
-      if (err || !row) return res.redirect('/login');
+      if (err || !row) {
+        return req.xhr || req.headers.accept?.includes("application/json")
+          ? res.status(401).json({ error: "Unauthorized" })
+          : res.redirect('/home');
+      }
 
-      // Treat 1 as banned
       if (row.banned === 1) {
         res.clearCookie('token');
         return res.redirect('/ban');
@@ -140,7 +147,9 @@ function requireAuth(req, res, next) {
     });
 
   } catch {
-    return res.redirect('/login');
+    return req.xhr || req.headers.accept?.includes("application/json")
+      ? res.status(401).json({ error: "Unauthorized" })
+      : res.redirect('/home');
   }
 }
 
