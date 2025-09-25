@@ -1,7 +1,22 @@
 {
   "1": {
     "username": null,
-    "pfp": "/images/icon-user.png"
+    "pfp": "/images/icon-user.png",
+    "pfpChanges": [],
+    "lastUsernameChange": 0,
+    "friends": [],
+    "requests": [
+      {
+        "fromId": 5,
+        "fromUsername": "ciprian001",
+        "date": 1758807335582
+      },
+      {
+        "fromId": 9,
+        "fromUsername": "ciprian1010",
+        "date": 1758809256572
+      }
+    ]
   },
   "3": {
     "username": "CiprianAdminT2",
@@ -23,6 +38,13 @@
       1758542565367,
       1758542576495,
       1758542590275
+    ],
+    "friends": [
+      {
+        "id": 9,
+        "username": "ciprian1010",
+        "pfp": "/images/icon-user.png"
+      }
     ]
   },
   "6": {
@@ -42,5 +64,19 @@
     "pfp": "/images/icon-user.png",
     "pfpChanges": [],
     "lastUsernameChange": 0
+  },
+  "9": {
+    "username": "Cipriantestadmin",
+    "pfp": "/images/icon-user.png",
+    "pfpChanges": [],
+    "lastUsernameChange": 1758809441295,
+    "friends": [
+      {
+        "id": 5,
+        "username": "ciprian001",
+        "pfp": "/user-images/68f91520550f31675bc1f0f5.jpg"
+      }
+    ],
+    "requests": []
   }
 }

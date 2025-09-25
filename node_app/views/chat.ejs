@@ -9,14 +9,27 @@
           <link rel="icon" href="/images/logo-white.png">
 </head>
 <body class="night">
+  <!-- Vertical Sidebar Menu -->
+<aside class="vertical-menu">
+  <div class="menu-logo">
+    <img src="/images/logo-white.png" alt="Logo">
+  </div>
+  <ul class="menu-items">
+    <li><a href="/home" ><i class="fa fa-house"></i><span>Home</span></a></li>
+    <li><a href="/chat" class="active"><i class="fa fa-comments"></i><span>Chat</span></a></li>
+    <li><a href="/about-us"><i class="fa fa-info-circle"></i><span>About</span></a></li>
+    <li><a href="/settings"><i class="fa fa-gear"></i><span>Settings</span></a></li>
+    <li><a href="/logout"><i class="fa fa-right-from-bracket"></i><span>Logout</span></a></li>
+  </ul>
+</aside>
   <div class="container">
     <aside class="sidebar">
       <div class="sidebar-header">
-        <img src="" alt="User" class="profile-pic"> <label id="username-label"><%=user.username%></label>
-        <div class="menu-icons">
-          <i class="fa fa-circle-notch"></i>
-          <i class="fa fa-comment-alt"></i>
-          <i class="fa fa-ellipsis-v"></i>
+<img src="<%= userSettings.pfp %>" alt="User" class="profile-pic">
+<label id="username-label"><%= userSettings.username || user.username %></label>        <div class="menu-icons">
+          <!-- <i class="fa fa-circle-notch"></i>
+          <i class="fa fa-comment-alt"></i> -->
+          <!-- <i class="fa fa-ellipsis-v" style="color:#1e90ff"></i> -->
         </div>
       </div>
 
@@ -29,10 +42,10 @@
       <!-- Chat list -->
       <div class="chat-list">
         <div class="chat">
-          <img src="" alt="Contact">
+          <img src="${f.pfp}" alt="Contact" id="user-img">
           <div class="chat-info">
-            <h4>Rossi</h4>
-            <p>ultimo messaggio placeholder</p>
+            <h4 class="name-user">${f.username}</h4>
+            <p class="last-message">ultimo messaggio placeholder</p>
           </div>
           <span class="time">10:45</span>
         </div>
@@ -40,6 +53,7 @@
         <div class="chat-buttons">
           <button id="add-friend-btn"><i class="fa fa-user-plus"></i> Add Friend</button>
           <button id="join-group-btn"><i class="fa fa-users"></i> Join Group</button>
+          <button id="requests"><i class="fa-solid fa-inbox"></i>Requests <span id="incoming-requests">0</span></button>
         </div>
       </div>
     </aside>
@@ -65,16 +79,48 @@
       <div class="chat-search" id="chat-search">
         <input type="text" placeholder="Search messages..." id="chat-search-input">
       </div>
+<div class="messages">
+  <!-- CHAT VIEW (default visible) -->
+  <div id="chat-view" class="chat-view">
+    <div class="message incoming">
+      <p>test <span class="time">99:99</span></p>
+    </div>
+    <div class="message outgoing">
+      <p>hello world <span class="time">99:99 <i class="fa fa-check-double read"></i></span></p>
+    </div>
+    <!-- ...other messages... -->
+  </div>
 
-      <!-- Messages -->
-      <div class="messages">
-        <div class="message incoming">
-          <p>test <span class="time">99:99</span></p>
-        </div>
-        <div class="message outgoing">
-          <p>hello world <span class="time">99:99 <i class="fa fa-check-double read"></i></span></p>
-        </div>
-      </div>
+  <!-- SETTINGS VIEW (hidden by default) -->
+  <div id="settings-view" class="settings-view" aria-hidden="true">
+    <div class="settings-header">
+      <button class="back-to-chat" aria-label="Back"><i class="fa fa-arrow-left" style="color: white;"></i></button>
+      <h3>Chat Settings</h3>
+    </div>
+
+    <div class="settings-body">
+      <!-- <label>
+        <input type="checkbox" id="mute-chat"> Mute chat
+      </label> -->
+
+      <label>
+        <input type="checkbox" id="show-notification"> Notifications
+      </label>
+      <label>
+        <input type="checkbox" id="auto-clear" checked> Auto-Clear Chat after 15 days
+      </label>
+
+     <button class="clear-chat"><i class="fas fa-desktop"></i>  Clear Chat</button>
+          
+    <button class="clear-chat"><i class="fas fa-server"></i>
+Clear Server-Side Chat</button>
+     <p class="mini-text">Remember! Clearing the server-side chat is  permitted only after the 2 partecipant to the chat agreed so.</p>
+      <button class="clear-chat-delete-friend">Clear Chat and Delete Friend</button>
+
+    </div>
+  </div>
+</div>
+
 
       <!-- Footer -->
       <div class="chat-footer">
@@ -86,16 +132,35 @@
       </div>
     </main>
   </div>
+  
 
   <!-- Modal -->
   <div class="modal" id="modal">
     <div class="modal-content">
       <span class="close-btn">&times;</span>
       <h3 id="modal-title">Add Friend</h3>
+      <input type="hidden" id="csrfToken" value="<%= csrfToken %>">
       <input type="text" id="modal-input" placeholder="Enter name...">
       <button id="modal-submit">Submit</button>
     </div>
   </div>
+  <div class="modal" id="requests-modal">
+  <div class="modal-content">
+    <span class="close-btn">&times;</span>
+    <h3 id="requests-title">Requests</h3>
+
+    <!-- Example requests list -->
+    <div class="requests-list">
+      <div class="request">
+        <span>${req.fromUsername}</span>
+        <div class="request-actions">
+          <button class="accept-btn" data-id="${req.fromId}>Accept</button>
+          <button class="decline-btn" data-id="${req.fromId}" >Decline</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
   <script src="/js/code-chat.js"></script>
 </body>

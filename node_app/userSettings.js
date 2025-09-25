@@ -24,15 +24,16 @@ function ensureSettings(userId) {
     db.data[userId] = {};
   }
 
-  // Backfill defaults so old users don’t break
   if (!("username" in db.data[userId])) db.data[userId].username = null;
   if (!("pfp" in db.data[userId])) db.data[userId].pfp = "/images/icon-user.png";
   if (!("pfpChanges" in db.data[userId])) db.data[userId].pfpChanges = [];
   if (!("lastUsernameChange" in db.data[userId])) db.data[userId].lastUsernameChange = 0;
+  if (!("friends" in db.data[userId])) db.data[userId].friends = []; // 👈 add this
 
   db.write();
   return db.data[userId];
 }
+
 
 function getSettings(userId) {
   return ensureSettings(userId);
@@ -100,3 +101,6 @@ module.exports = {
   canChangePfp,
   canChangeUsername
 };
+
+
+

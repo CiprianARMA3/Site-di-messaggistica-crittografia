@@ -1,3 +1,4 @@
+// server.js
 require('dotenv').config();
 const path = require('path');
 const express = require('express');
@@ -11,10 +12,16 @@ const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const multer = require('multer');
 const fs = require('fs');
-const sharp = require('sharp'); // ✅ for image resizing/compression
+const sharp = require('sharp'); // image processing
 
 const { db } = require('./db'); // SQLite
-const { getSettings, updateSettings, deletePfp, canChangeUsername } = require("./userSettings");
+const {
+  getSettings,
+  updateSettings,
+  deletePfp,
+  canChangeUsername,
+  ensureSettings
+} = require("./userSettings");
 
 const app = express();
 
@@ -39,7 +46,10 @@ const SALT_ROUNDS = 12;
 
 // --- App setup ---
 app.set('view engine', 'ejs');
+
+// parse urlencoded bodies (for forms) and JSON bodies (for fetch)
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(cookieParser());
 app.use(helmet());
 
@@ -51,13 +61,27 @@ const authLimiter = rateLimit({
 });
 
 // --- CSRF protection ---
+// csurf reads the token from the cookie (we'll expose it in res.locals.csrfToken for forms)
+// For fetch/XHR you must include the token in a header (e.g. 'csrf-token') or in the body as _csrf
 app.use(csurf({ cookie: true }));
 app.use((req, res, next) => {
   res.locals.csrfToken = req.csrfToken();
   next();
 });
 
-// --- Helper functions (encrypt/decrypt kept for your DB usage) ---
+// Optional: nice CSRF error handler
+app.use((err, req, res, next) => {
+  if (err && err.code === 'EBADCSRFTOKEN') {
+    // If it's an AJAX request, return JSON; otherwise render an error page
+    if (req.xhr || req.headers.accept?.includes('application/json')) {
+      return res.status(403).json({ error: 'Invalid CSRF token' });
+    }
+    return res.status(403).render('csrf-error', { csrfToken: res.locals.csrfToken });
+  }
+  next(err);
+});
+
+// --- Helper functions (encrypt/decrypt) ---
 function encrypt(text) {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', AES_KEY, iv);
@@ -107,11 +131,11 @@ function requireAuth(req, res, next) {
     db.get("SELECT banned FROM database_utenti WHERE id = ?", [decoded.id], (err, row) => {
       if (err || !row) return res.redirect('/login');
 
-      // 🔒 Treat both 1 and null as banned
-        if (row.banned === 1) {
-          res.clearCookie('token');
-          return res.redirect('/ban');
-        }
+      // Treat 1 as banned
+      if (row.banned === 1) {
+        res.clearCookie('token');
+        return res.redirect('/ban');
+      }
       next();
     });
 
@@ -142,28 +166,21 @@ app.get('/forgot-password', (req, res) => res.render('forgot-password', { csrfTo
 app.get('/ban', (req, res) => {
   const token = req.cookies.token;
   if (!token) {
-    // No login → show ban page
     return res.render('ban', { csrfToken: res.locals.csrfToken });
   }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     db.get("SELECT banned FROM database_utenti WHERE id = ?", [decoded.id], (err, row) => {
-      if (err || !row) {
-        // DB error or no user → show ban page
-        return res.render('ban', { csrfToken: res.locals.csrfToken });
-      }
+      if (err || !row) return res.render('ban', { csrfToken: res.locals.csrfToken });
 
       if (row.banned === 1) {
-        // 🚫 Still banned → show ban page
         return res.render('ban', { csrfToken: res.locals.csrfToken });
       }
 
-      // ✅ Not banned → redirect home
       return res.redirect('/home');
     });
   } catch {
-    // Invalid token → show ban page
     return res.render('ban', { csrfToken: res.locals.csrfToken });
   }
 });
@@ -184,7 +201,7 @@ if (!fs.existsSync(userImagesDir)) fs.mkdirSync(userImagesDir, { recursive: true
 
 const upload = multer({
   dest: userImagesDir,
-  limits: { fileSize: 1024 * 1024 }, // 1 MB max upload
+  limits: { fileSize: 1024 * 1024 }, // 1 MB
   fileFilter: (req, file, cb) => {
     if (!file.mimetype.startsWith("image/")) {
       return cb(new multer.MulterError('LIMIT_UNEXPECTED_FILE', 'Only images allowed'));
@@ -267,7 +284,7 @@ app.post(
       const filename = crypto.randomBytes(12).toString("hex") + ".jpg";
       const filepath = path.join(userImagesDir, filename);
 
-      // ✅ Resize and compress image before saving
+      // Resize + compress
       await sharp(req.file.path)
         .resize(500, 500, { fit: "inside" })
         .jpeg({ quality: 80 })
@@ -337,8 +354,8 @@ app.post("/settings/password", requireAuth, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
   if (!currentPassword || !newPassword) {
-    return res.status(400).render("settings", {
-      csrfToken: req.csrfToken(),
+    return res.status(400).render('settings', {
+      csrfToken: res.locals.csrfToken,
       user: req.user,
       userSettings: getSettings(userId),
       error: "❌ Please fill in all fields."
@@ -346,8 +363,8 @@ app.post("/settings/password", requireAuth, async (req, res) => {
   }
 
   if (!canChangePassword(userId)) {
-    return res.status(429).render("settings", {
-      csrfToken: req.csrfToken(),
+    return res.status(429).render('settings', {
+      csrfToken: res.locals.csrfToken,
       user: req.user,
       userSettings: getSettings(userId),
       error: "❌ You can only change password once per week."
@@ -357,8 +374,8 @@ app.post("/settings/password", requireAuth, async (req, res) => {
   try {
     db.get("SELECT password FROM database_utenti WHERE id = ?", [userId], async (err, row) => {
       if (err || !row) {
-        return res.status(500).render("settings", {
-          csrfToken: req.csrfToken(),
+        return res.status(500).render('settings', {
+          csrfToken: res.locals.csrfToken,
           user: req.user,
           userSettings: getSettings(userId),
           error: "⚠️ Server error."
@@ -367,8 +384,8 @@ app.post("/settings/password", requireAuth, async (req, res) => {
 
       const match = await bcrypt.compare(currentPassword, row.password);
       if (!match) {
-        return res.status(400).render("settings", {
-          csrfToken: req.csrfToken(),
+        return res.status(400).render('settings', {
+          csrfToken: res.locals.csrfToken,
           user: req.user,
           userSettings: getSettings(userId),
           error: "❌ Current password is incorrect."
@@ -378,8 +395,8 @@ app.post("/settings/password", requireAuth, async (req, res) => {
       const hashed = await bcrypt.hash(newPassword, SALT_ROUNDS);
       db.run("UPDATE database_utenti SET password = ? WHERE id = ?", [hashed, userId], (err2) => {
         if (err2) {
-          return res.status(500).render("settings", {
-            csrfToken: req.csrfToken(),
+          return res.status(500).render('settings', {
+            csrfToken: res.locals.csrfToken,
             user: req.user,
             userSettings: getSettings(userId),
             error: "⚠️ Could not update password."
@@ -392,8 +409,8 @@ app.post("/settings/password", requireAuth, async (req, res) => {
     });
   } catch (e) {
     console.error(e);
-    return res.status(500).render("settings", {
-      csrfToken: req.csrfToken(),
+    return res.status(500).render('settings', {
+      csrfToken: res.locals.csrfToken,
       user: req.user,
       userSettings: getSettings(userId),
       error: "⚠️ Unexpected error."
@@ -402,9 +419,204 @@ app.post("/settings/password", requireAuth, async (req, res) => {
 });
 
 // --- Chat ---
-app.get('/chat', requireAuth, (req, res) =>
-  res.render('chat', { csrfToken: res.locals.csrfToken, user: req.user })
-);
+app.get('/chat', requireAuth, (req, res) => {
+  const userSettings = getSettings(req.user.id);
+  res.render('chat', {
+    csrfToken: res.locals.csrfToken,
+    user: req.user,
+    userSettings
+  });
+});
+
+// ---------------- FRIENDS API ----------------
+// Friends & Requests now only store IDs in LowDB.
+// Usernames + PFP are always fetched fresh from database_utenti + userSettings.
+// ------------------------------------------------
+
+// Send friend request
+app.post("/friends/request", requireAuth, (req, res) => {
+  const { friendId } = req.body;
+  const senderId = req.user.id;
+
+  if (!friendId || String(friendId) === String(senderId)) {
+    return res.status(400).json({ error: "Invalid friend ID" });
+  }
+
+  db.get("SELECT id, username FROM database_utenti WHERE id = ?", [friendId], (err, target) => {
+    if (err) return res.status(500).json({ error: "Server error" });
+    if (!target) return res.status(404).json({ error: "User not found" });
+
+    const senderSettings = ensureSettings(senderId);
+    const targetSettings = ensureSettings(target.id);
+
+    if (!Array.isArray(senderSettings.friends)) senderSettings.friends = [];
+    if (!Array.isArray(targetSettings.requests)) targetSettings.requests = [];
+
+    // ✅ Block if already friends
+    const alreadyFriends = senderSettings.friends.some(f => String(f.id) === String(friendId));
+    if (alreadyFriends) {
+      return res.status(400).json({ error: "You are already friends with this user" });
+    }
+
+    // ✅ Prevent duplicate requests
+    if (targetSettings.requests.find(r => String(r.fromId) === String(senderId))) {
+      return res.status(400).json({ error: "Request already sent" });
+    }
+
+    // ✅ Fetch sender's username + pfp
+    db.get("SELECT username FROM database_utenti WHERE id = ?", [senderId], (err2, senderRow) => {
+      if (err2 || !senderRow) return res.status(500).json({ error: "Could not fetch sender info" });
+
+      const senderViewedName = decrypt(senderRow.username) || "Unknown";
+      const senderPfp = senderSettings.pfp || "/images/icon-user.png";
+
+      targetSettings.requests.push({
+        fromId: senderId,
+        fromUsername: senderViewedName,
+        fromPfp: senderPfp,
+        date: Date.now()
+      });
+
+      updateSettings(target.id, targetSettings);
+      res.json({ success: true, message: "Request sent" });
+    });
+  });
+});
+
+// Get incoming requests (resolve username + pfp)
+app.get("/friends/requests", requireAuth, (req, res) => {
+  const settings = ensureSettings(req.user.id);
+  const requests = settings.requests || [];
+
+  const fromIds = requests.map(r => r.fromId);
+  if (fromIds.length === 0) {
+    return res.json({ requests: [], count: 0 });
+  }
+
+  const placeholders = fromIds.map(() => "?").join(",");
+  db.all(`SELECT id, username FROM database_utenti WHERE id IN (${placeholders})`, fromIds, (err, rows) => {
+    if (err) return res.status(500).json({ error: "Server error" });
+
+    const requestsWithNames = requests.map(r => {
+      const userRow = rows.find(row => String(row.id) === String(r.fromId));
+      const userSettings = getSettings(r.fromId); // 🔥 get pfp from LowDB
+      return {
+        fromId: r.fromId,
+        fromUsername: userRow ? decrypt(userRow.username) : "Unknown",
+        fromPfp: userSettings?.pfp || "/images/icon-user.png",
+        date: r.date
+      };
+    });
+
+    res.json({ requests: requestsWithNames, count: requestsWithNames.length });
+  });
+});
+
+// Accept friend request
+app.post("/friends/accept", requireAuth, (req, res) => {
+  const { fromId } = req.body;
+  const receiverId = req.user.id;
+  const receiverSettings = ensureSettings(receiverId);
+
+  if (!Array.isArray(receiverSettings.requests)) {
+    return res.status(400).json({ error: "No requests" });
+  }
+
+  const request = receiverSettings.requests.find(r => String(r.fromId) === String(fromId));
+  if (!request) return res.status(404).json({ error: "Request not found" });
+
+  db.all("SELECT id, username FROM database_utenti", [], (err, rows) => {
+    if (err) return res.status(500).json({ error: "Server error" });
+
+    const sender = rows.find(r => String(r.id) === String(fromId));
+    const receiver = rows.find(r => String(r.id) === String(receiverId));
+    if (!sender || !receiver) return res.status(404).json({ error: "User not found" });
+
+    const senderSettings = ensureSettings(sender.id);
+    if (!Array.isArray(receiverSettings.friends)) receiverSettings.friends = [];
+    if (!Array.isArray(senderSettings.friends)) senderSettings.friends = [];
+
+    // ✅ Check if already friends
+    const alreadyFriends =
+      receiverSettings.friends.some(f => String(f.id) === String(sender.id)) &&
+      senderSettings.friends.some(f => String(f.id) === String(receiver.id));
+
+    if (alreadyFriends) {
+      return res.status(400).json({ error: "You are already friends with this user" });
+    }
+
+    // Remove request
+    receiverSettings.requests = receiverSettings.requests.filter(r => String(r.fromId) !== String(fromId));
+
+    // ✅ Store usernames + pfps
+    const senderViewedName = decrypt(sender.username) || "Unknown";
+    const receiverViewedName = decrypt(receiver.username) || "Unknown";
+
+    const senderPfp = senderSettings.pfp || "/images/icon-user.png";
+    const receiverPfp = receiverSettings.pfp || "/images/icon-user.png";
+
+    receiverSettings.friends.push({ id: sender.id, username: senderViewedName, pfp: senderPfp });
+    senderSettings.friends.push({ id: receiver.id, username: receiverViewedName, pfp: receiverPfp });
+
+    updateSettings(receiverId, receiverSettings);
+    updateSettings(sender.id, senderSettings);
+
+    return res.json({ success: true, message: "Friend request accepted" });
+  });
+});
+
+// Decline request
+app.post("/friends/decline", requireAuth, (req, res) => {
+  const { fromId } = req.body;
+  const receiverId = req.user.id;
+  const receiverSettings = ensureSettings(receiverId);
+
+  if (!Array.isArray(receiverSettings.requests)) {
+    return res.json({ success: true });
+  }
+
+  receiverSettings.requests = receiverSettings.requests.filter(r => String(r.fromId) !== String(fromId));
+  updateSettings(receiverId, receiverSettings);
+
+  res.json({ success: true });
+});
+
+app.get("/friends/list", requireAuth, (req, res) => {
+  const settings = ensureSettings(req.user.id);
+  const friendsRaw = Array.isArray(settings.friends) ? settings.friends : [];
+  const friendIds = friendsRaw.map(f => f.id);
+
+  if (friendIds.length === 0) {
+    return res.json({ friends: [] });
+  }
+
+  const placeholders = friendIds.map(() => "?").join(",");
+  db.all(
+    `SELECT id, username FROM database_utenti WHERE id IN (${placeholders})`,
+    friendIds,
+    (err, rows) => {
+      if (err) return res.status(500).json({ error: "Server error" });
+
+      const friends = rows.map(r => {
+        const userSettings = getSettings(r.id);
+
+        // ✅ pull viewed username from LowDB if it exists
+        const viewedName = userSettings?.username || decrypt(r.username) || "Unknown";
+
+        return {
+          id: r.id,
+          username: viewedName,
+          pfp: userSettings?.pfp || "/images/icon-user.png"
+        };
+      });
+
+      res.json({ friends });
+    }
+  );
+});
+
+
+
 
 // --- SIGNUP / LOGIN / LOGOUT ---
 const lastRegistrationByIP = {};
@@ -499,11 +711,9 @@ app.post('/login', authLimiter, async (req, res) => {
     if (err) return res.status(500).render('login', { csrfToken: res.locals.csrfToken, error: 'Server error.' });
     if (!user) return res.status(401).render('login', { csrfToken: res.locals.csrfToken, error: 'Invalid credentials.' });
 
-    // ✅ Only 1 means banned
     if (user.banned === 1) {
       return res.redirect('/ban');
     }
-
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).render('login', { csrfToken: res.locals.csrfToken, error: 'Invalid credentials.' });
