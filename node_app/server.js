@@ -1,53 +1,71 @@
-// server.js
-require('dotenv').config();
-const path = require('path');
-const express = require('express');
-const bodyParser = require('body-parser');
-const crypto = require('crypto');
-const bcrypt = require('bcrypt');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const csurf = require('csurf');
-const jwt = require('jsonwebtoken');
-const cookieParser = require('cookie-parser');
-const multer = require('multer');
-const fs = require('fs');
-const sharp = require('sharp'); // image processing
+require("dotenv").config();
+const path = require("path");
+const express = require("express");
+const bodyParser = require("body-parser");
+const crypto = require("crypto");
+const bcrypt = require("bcrypt");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
+const csurf = require("csurf");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
+const multer = require("multer");
+const fs = require("fs");
+const sharp = require("sharp");
+const session = require("express-session");
+const chatDB = require("./chatDB");
+const { getMessages, addMessage, getFriends, getRequests } = chatDB;
+const { db } = require("./db");
 
-const { db } = require('./db'); // SQLite
 const {
   getSettings,
   updateSettings,
   deletePfp,
   canChangeUsername,
-  ensureSettings
+  ensureSettings,
 } = require("./userSettings");
 
 const app = express();
 
-// --- Static files ---
-app.use(express.static(path.join(__dirname, "public")));
-app.use("/user-images", express.static(path.join(__dirname, "database/user-images")));
-
 // --- Environment / Secrets ---
-const SECRET_KEY = process.env.SECRET_KEY;
-const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 const PORT = process.env.PORT || 3000;
-const IN_PROD = process.env.PRODUCTION === 'true';
+const IN_PROD = process.env.PRODUCTION === "true";
+const SECRET_KEY = process.env.SECRET_KEY;
+const JWT_SECRET =
+  process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex");
+const SALT_ROUNDS = 12;
 
 if (!SECRET_KEY) {
-  console.error('❌ Missing SECRET_KEY in .env');
+  console.error("❌ Missing SECRET_KEY in .env");
   process.exit(1);
 }
 
-// derive AES key
-const AES_KEY = crypto.createHash('sha256').update(SECRET_KEY).digest();
-const SALT_ROUNDS = 12;
+const AES_KEY = crypto.createHash("sha256").update(SECRET_KEY).digest();
+
+// --- Sessions ---
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "supersecretkey",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: IN_PROD,
+      sameSite: "lax",
+      maxAge: 1000 * 60 * 60 * 2, // 2h
+    },
+  })
+);
+
+// --- Static files ---
+app.use(express.static(path.join(__dirname, "public")));
+app.use(
+  "/user-images",
+  express.static(path.join(__dirname, "database/user-images"))
+);
 
 // --- App setup ---
-app.set('view engine', 'ejs');
-
-// parse urlencoded bodies (for forms) and JSON bodies (for fetch)
+app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
@@ -57,154 +75,92 @@ app.use(helmet());
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
-  message: 'Too many attempts, please try again later.'
+  message: "Too many attempts, try later.",
 });
 
-// --- CSRF protection ---
-// csurf reads the token from the cookie (we'll expose it in res.locals.csrfToken for forms)
-// For fetch/XHR you must include the token in a header (e.g. 'csrf-token') or in the body as _csrf
+// --- CSRF ---
 app.use(csurf({ cookie: true }));
 app.use((req, res, next) => {
   res.locals.csrfToken = req.csrfToken();
   next();
 });
-
-// Optional: nice CSRF error handler
 app.use((err, req, res, next) => {
-  if (err && err.code === 'EBADCSRFTOKEN') {
-    // If it's an AJAX request, return JSON; otherwise render an error page
-    if (req.xhr || req.headers.accept?.includes('application/json')) {
-      return res.status(403).json({ error: 'Invalid CSRF token' });
-    }
-    return res.status(403).render('csrf-error', { csrfToken: res.locals.csrfToken });
+  if (err.code === "EBADCSRFTOKEN") {
+    return res.status(403).render("csrf-error", { csrfToken: res.locals.csrfToken });
   }
   next(err);
 });
 
-// --- Helper functions (encrypt/decrypt) ---
+// --- Helpers ---
 function encrypt(text) {
   const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv('aes-256-gcm', AES_KEY, iv);
-  const ciphertext = Buffer.concat([cipher.update(String(text), 'utf8'), cipher.final()]);
+  const cipher = crypto.createCipheriv("aes-256-gcm", AES_KEY, iv);
+  const ciphertext = Buffer.concat([cipher.update(String(text), "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
-  return Buffer.concat([iv, tag, ciphertext]).toString('base64');
+  return Buffer.concat([iv, tag, ciphertext]).toString("base64");
 }
 
 function decrypt(b64) {
   try {
-    const buf = Buffer.from(b64, 'base64');
+    const buf = Buffer.from(b64, "base64");
     const iv = buf.slice(0, 12);
     const tag = buf.slice(12, 28);
     const ct = buf.slice(28);
-    const decipher = crypto.createDecipheriv('aes-256-gcm', AES_KEY, iv);
+    const decipher = crypto.createDecipheriv("aes-256-gcm", AES_KEY, iv);
     decipher.setAuthTag(tag);
-    return Buffer.concat([decipher.update(ct), decipher.final()]).toString('utf8');
+    return Buffer.concat([decipher.update(ct), decipher.final()]).toString("utf8");
   } catch {
     return null;
   }
 }
 
 function emailHmac(email) {
-  return crypto.createHmac('sha256', SECRET_KEY)
+  return crypto.createHmac("sha256", SECRET_KEY)
     .update(String(email).toLowerCase())
-    .digest('hex');
+    .digest("hex");
 }
 
-// --- JWT Helpers ---
 function generateToken(user) {
   return jwt.sign(
     { id: user.id, username: user.username, email: user.email },
     JWT_SECRET,
-    { expiresIn: '2h' }
+    { expiresIn: "2h" }
   );
 }
 
-// --- Auth middleware with ban check ---
+// --- Auth middleware ---
 function requireAuth(req, res, next) {
-  const token = req.cookies.token;
-  if (!token) {
-    return req.xhr || req.headers.accept?.includes("application/json")
-      ? res.status(401).json({ error: "Unauthorized" })
-      : res.redirect('/login');
+  if (!req.session.user) {
+    return res.redirect("/login");
   }
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-
-    db.get("SELECT banned FROM database_utenti WHERE id = ?", [decoded.id], (err, row) => {
-      if (err || !row) {
-        return req.xhr || req.headers.accept?.includes("application/json")
-          ? res.status(401).json({ error: "Unauthorized" })
-          : res.redirect('/home');
-      }
-
-      if (row.banned === 1) {
-        res.clearCookie('token');
-        return res.redirect('/ban');
-      }
-      next();
-    });
-
-  } catch {
-    return req.xhr || req.headers.accept?.includes("application/json")
-      ? res.status(401).json({ error: "Unauthorized" })
-      : res.redirect('/home');
-  }
+  next();
 }
 
 function redirectIfAuth(req, res, next) {
-  const token = req.cookies.token;
-  if (!token) return next();
-
-  try {
-    jwt.verify(token, JWT_SECRET);
-    return res.redirect('/chat');
-  } catch {
-    next();
-  }
+  if (req.session.user) return res.redirect("/chat");
+  next();
 }
 
-// --- Routes (simple ones) ---
-app.get('/', (req, res) => res.render('home', { csrfToken: res.locals.csrfToken, user: null }));
-app.get('/home', (req, res) => res.render('home', { csrfToken: res.locals.csrfToken, user: null }));
-app.get('/about-us', (req, res) => res.render('about-us', { csrfToken: res.locals.csrfToken }));
-app.get('/contact', (req, res) => res.render('contact', { csrfToken: res.locals.csrfToken }));
-app.get('/forgot-password', (req, res) => res.render('forgot-password', { csrfToken: res.locals.csrfToken }));
+// --- Public pages ---
+app.get("/", (req, res) => res.render("home", { csrfToken: res.locals.csrfToken, user: null }));
+app.get("/home", (req, res) => res.render("home", { csrfToken: res.locals.csrfToken, user: null }));
+app.get("/about-us", (req, res) => res.render("about-us", { csrfToken: res.locals.csrfToken }));
+app.get("/contact", (req, res) => res.render("contact", { csrfToken: res.locals.csrfToken }));
+app.get("/forgot-password", (req, res) => res.render("forgot-password", { csrfToken: res.locals.csrfToken }));
 
-app.get('/ban', (req, res) => {
-  const token = req.cookies.token;
-  if (!token) {
-    return res.render('ban', { csrfToken: res.locals.csrfToken });
-  }
+app.get("/ban", (req, res) => res.render("ban", { csrfToken: res.locals.csrfToken }));
 
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    db.get("SELECT banned FROM database_utenti WHERE id = ?", [decoded.id], (err, row) => {
-      if (err || !row) return res.render('ban', { csrfToken: res.locals.csrfToken });
-
-      if (row.banned === 1) {
-        return res.render('ban', { csrfToken: res.locals.csrfToken });
-      }
-
-      return res.redirect('/home');
-    });
-  } catch {
-    return res.render('ban', { csrfToken: res.locals.csrfToken });
-  }
-});
-
-// --- Settings page ---
+// --- Settings ---
 app.get("/settings", requireAuth, (req, res) => {
-  const userSettings = getSettings(req.user.id);
-  res.render("settings", {
-    csrfToken: res.locals.csrfToken,
-    user: req.user,
-    userSettings,
-  });
+  const userSettings = getSettings(req.session.user.id);
+res.render("settings", {
+  csrfToken: res.locals.csrfToken,
+  user: req.session.user,
+  userSettings: getSettings(req.session.user.id),
+});
 });
 
-// ---------------- Multer setup ----------------
+// --- Multer setup ---
 const userImagesDir = path.join(__dirname, "database/user-images");
 if (!fs.existsSync(userImagesDir)) fs.mkdirSync(userImagesDir, { recursive: true });
 
@@ -213,115 +169,53 @@ const upload = multer({
   limits: { fileSize: 1024 * 1024 }, // 1 MB
   fileFilter: (req, file, cb) => {
     if (!file.mimetype.startsWith("image/")) {
-      return cb(new multer.MulterError('LIMIT_UNEXPECTED_FILE', 'Only images allowed'));
+      return cb(new multer.MulterError("LIMIT_UNEXPECTED_FILE", "Only images allowed"));
     }
     cb(null, true);
+  },
+});
+
+// --- Change PFP ---
+app.post("/settings/pfp", requireAuth, upload.single("pfp"), async (req, res) => {
+  const userId = req.session.user.id;
+  if (!req.file) {
+    return res.status(400).render("settings", {
+      csrfToken: res.locals.csrfToken,
+      user: req.session.user,
+      userSettings: getSettings(userId),
+      error: "❌ No file uploaded.",
+    });
+  }
+
+  try {
+    const filename = crypto.randomBytes(12).toString("hex") + ".jpg";
+    const filepath = path.join(userImagesDir, filename);
+
+    await sharp(req.file.path)
+      .resize(500, 500, { fit: "inside" })
+      .jpeg({ quality: 80 })
+      .toFile(filepath);
+
+    fs.unlinkSync(req.file.path);
+
+    deletePfp(userId);
+    updateSettings(userId, { pfp: "/user-images/" + filename });
+
+    res.redirect("/settings");
+  } catch (err) {
+    console.error(err);
+    res.status(500).render("settings", {
+      csrfToken: res.locals.csrfToken,
+      user: req.session.user,
+      userSettings: getSettings(userId),
+      error: "⚠️ Upload failed.",
+    });
   }
 });
 
-// --- Multer error handling middleware ---
-function uploadErrorHandler(err, req, res, next) {
-  const user = req.user || null;
-  if (err instanceof multer.MulterError) {
-    let msg = "⚠️ Upload failed.";
-    if (err.code === "LIMIT_FILE_SIZE") msg = "❌ File too large. Max 1MB allowed.";
-    else if (err.code === "LIMIT_UNEXPECTED_FILE") msg = "❌ Only image uploads are allowed.";
-    else msg = `❌ Upload error: ${err.message}`;
-
-    return res.status(400).render("settings", {
-      csrfToken: req.csrfToken(),
-      user,
-      userSettings: user ? getSettings(user.id) : {},
-      error: msg
-    });
-  }
-  if (err) {
-    return res.status(400).render("settings", {
-      csrfToken: req.csrfToken(),
-      user,
-      userSettings: user ? getSettings(user.id) : {},
-      error: "❌ Upload error: " + err.message
-    });
-  }
-  next();
-}
-
-// --- Track PFP change attempts (in-memory) ---
-const pfpChangeLog = {};
-function canChangePfp(userId) {
-  const now = Date.now();
-  if (!pfpChangeLog[userId]) pfpChangeLog[userId] = [];
-  pfpChangeLog[userId] = pfpChangeLog[userId].filter(ts => now - ts < 10 * 60 * 1000);
-  if (pfpChangeLog[userId].length >= 5) return false;
-  pfpChangeLog[userId].push(now);
-  return true;
-}
-
-// ---------------- Change PFP route with sharp ----------------
-app.post(
-  "/settings/pfp",
-  requireAuth,
-  upload.single("pfp"),
-  uploadErrorHandler,
-  async (req, res) => {
-    const userId = req.user.id;
-
-    try {
-      if (!req.file) {
-        return res.status(400).render("settings", {
-          csrfToken: res.locals.csrfToken,
-          user: req.user,
-          userSettings: getSettings(userId),
-          error: "❌ No file uploaded."
-        });
-      }
-
-      if (!canChangePfp(userId)) {
-        try { fs.unlinkSync(req.file.path); } catch {}
-        return res.status(429).render("settings", {
-          csrfToken: res.locals.csrfToken,
-          user: req.user,
-          userSettings: getSettings(userId),
-          error: "❌ You can only change PFP 5 times every 10 minutes."
-        });
-      }
-
-      // Delete old picture
-      deletePfp(userId);
-
-      // Generate new filename
-      const filename = crypto.randomBytes(12).toString("hex") + ".jpg";
-      const filepath = path.join(userImagesDir, filename);
-
-      // Resize + compress
-      await sharp(req.file.path)
-        .resize(500, 500, { fit: "inside" })
-        .jpeg({ quality: 80 })
-        .toFile(filepath);
-
-      fs.unlinkSync(req.file.path); // delete temp upload
-
-      updateSettings(userId, { pfp: "/user-images/" + filename });
-
-      res.redirect("/settings");
-    } catch (err) {
-      console.error(err);
-      if (req.file && req.file.path && fs.existsSync(req.file.path)) {
-        try { fs.unlinkSync(req.file.path); } catch {}
-      }
-      res.status(500).render("settings", {
-        csrfToken: res.locals.csrfToken,
-        user: req.user,
-        userSettings: getSettings(userId),
-        error: "⚠️ Upload failed."
-      });
-    }
-  }
-);
-
 // ---------------- Change username ----------------
 app.post("/settings/username", requireAuth, (req, res) => {
-  const userId = req.user.id;
+  const userId = req.session.user.id;
   const newUsername = req.body.newUsername;
 
   if (!newUsername || newUsername.trim().length < 3) {
@@ -332,6 +226,31 @@ app.post("/settings/username", requireAuth, (req, res) => {
       error: "❌ Username too short."
     });
   }
+
+  app.post("/chat/:friendId", requireAuth, async (req, res) => {
+  try {
+    const friendId = req.params.friendId;
+    const { content, type } = req.body;
+
+    if (!content || !type) {
+      return res.status(400).json({ error: "Invalid message format" });
+    }
+
+    const message = {
+      senderId: req.session.user.id,
+      content,
+      type, // "text" | "image" | ...
+      timestamp: Date.now()
+    };
+
+    await addMessage(req.session.user.id, friendId, message);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error sending message:", err);
+    res.status(500).json({ error: "Failed to send message" });
+  }
+});
 
   if (!canChangeUsername(userId)) {
     return res.status(429).render("settings", {
@@ -359,7 +278,7 @@ function logPasswordChange(userId) {
 }
 
 app.post("/settings/password", requireAuth, async (req, res) => {
-  const userId = req.user.id;
+  const userId = req.session.user.id;
   const { currentPassword, newPassword } = req.body;
 
   if (!currentPassword || !newPassword) {
@@ -428,13 +347,35 @@ app.post("/settings/password", requireAuth, async (req, res) => {
 });
 
 // --- Chat ---
-app.get('/chat', requireAuth, (req, res) => {
-  const userSettings = getSettings(req.user.id);
-  res.render('chat', {
-    csrfToken: res.locals.csrfToken,
-    user: req.user,
-    userSettings
-  });
+app.get("/chat", async (req, res) => {
+  try {
+    if (!req.session.user) {
+      return res.redirect("/login");
+    }
+
+    const userId = req.session.user.id;
+
+    // load friends + requests
+    const friends = await chatDB.getFriends(userId);
+    const requests = await chatDB.getRequests(userId);
+
+    // load settings from DB (or return defaults)
+    let userSettings = await getSettings(userId);
+    if (!userSettings) {
+      userSettings = { pfp: "/images/default.png", username: req.session.user.username };
+    }
+
+    res.render("chat", {
+      user: req.session.user,
+      userSettings,   // ✅ now chat.ejs won’t crash
+      friends,
+      requests
+    });
+
+  } catch (err) {
+    console.error("Error loading chat:", err);
+    res.status(500).send("Error loading chat");
+  }
 });
 
 // ---------------- FRIENDS API ----------------
@@ -445,7 +386,7 @@ app.get('/chat', requireAuth, (req, res) => {
 // Send friend request
 app.post("/friends/request", requireAuth, (req, res) => {
   const { friendId } = req.body;
-  const senderId = req.user.id;
+  const senderId = req.session.user.id;
 
   if (!friendId || String(friendId) === String(senderId)) {
     return res.status(400).json({ error: "Invalid friend ID" });
@@ -494,7 +435,7 @@ app.post("/friends/request", requireAuth, (req, res) => {
 
 // Get incoming requests (resolve username + pfp)
 app.get("/friends/requests", requireAuth, (req, res) => {
-  const settings = ensureSettings(req.user.id);
+  const settings = ensureSettings(req.session.user.id);
   const requests = settings.requests || [];
 
   const fromIds = requests.map(r => r.fromId);
@@ -524,7 +465,7 @@ app.get("/friends/requests", requireAuth, (req, res) => {
 // Accept friend request
 app.post("/friends/accept", requireAuth, (req, res) => {
   const { fromId } = req.body;
-  const receiverId = req.user.id;
+  const receiverId = req.session.user.id;
   const receiverSettings = ensureSettings(receiverId);
 
   if (!Array.isArray(receiverSettings.requests)) {
@@ -577,7 +518,7 @@ app.post("/friends/accept", requireAuth, (req, res) => {
 // Decline request
 app.post("/friends/decline", requireAuth, (req, res) => {
   const { fromId } = req.body;
-  const receiverId = req.user.id;
+  const receiverId = req.session.user.id;
   const receiverSettings = ensureSettings(receiverId);
 
   if (!Array.isArray(receiverSettings.requests)) {
@@ -591,7 +532,7 @@ app.post("/friends/decline", requireAuth, (req, res) => {
 });
 
 app.get("/friends/list", requireAuth, (req, res) => {
-  const settings = ensureSettings(req.user.id);
+  const settings = ensureSettings(req.session.user.id);
   const friendsRaw = Array.isArray(settings.friends) ? settings.friends : [];
   const friendIds = friendsRaw.map(f => f.id);
 
@@ -716,25 +657,46 @@ app.post('/login', authLimiter, async (req, res) => {
   }
 
   const email_hash = emailHmac(email);
+
   db.get("SELECT * FROM database_utenti WHERE email_hash = ?", [email_hash], async (err, user) => {
-    if (err) return res.status(500).render('login', { csrfToken: res.locals.csrfToken, error: 'Server error.' });
-    if (!user) return res.status(401).render('login', { csrfToken: res.locals.csrfToken, error: 'Invalid credentials.' });
+    if (err) {
+      return res.status(500).render('login', {
+        csrfToken: res.locals.csrfToken,
+        error: 'Server error.'
+      });
+    }
+    if (!user) {
+      return res.status(401).render('login', {
+        csrfToken: res.locals.csrfToken,
+        error: 'Invalid credentials.'
+      });
+    }
 
     if (user.banned === 1) {
       return res.redirect('/ban');
     }
 
     const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(401).render('login', { csrfToken: res.locals.csrfToken, error: 'Invalid credentials.' });
+    if (!match) {
+      return res.status(401).render('login', {
+        csrfToken: res.locals.csrfToken,
+        error: 'Invalid credentials.'
+      });
+    }
 
+    // ✅ Decrypt values before saving
     const decodedUser = {
       id: user.id,
       username: decrypt(user.username),
-      email: decrypt(user.email)
+      email: decrypt(user.email),
+      pfp: user.pfp ? decrypt(user.pfp) : "/images/default.png"
     };
 
-    const token = generateToken(decodedUser);
+    // ✅ Save into session
+    req.session.user = decodedUser;
 
+    // (Optional) also set token cookie if you need JWT
+    const token = generateToken(decodedUser);
     res.cookie('token', token, {
       httpOnly: true,
       secure: IN_PROD,
@@ -745,6 +707,7 @@ app.post('/login', authLimiter, async (req, res) => {
     res.redirect('/chat');
   });
 });
+
 
 app.post('/logout', (req, res) => {
   res.clearCookie('token');

@@ -6,31 +6,30 @@
   <title>Chat</title>
   <link rel="stylesheet" href="/css/style-chat.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-          <link rel="icon" href="/images/logo-white.png">
+  <link rel="icon" href="/images/logo-white.png">
 </head>
 <body class="night">
+  <div id="notification" class="notification"></div>
+
   <!-- Vertical Sidebar Menu -->
-<aside class="vertical-menu">
-  <div class="menu-logo">
-    <img src="/images/logo-white.png" alt="Logo">
-  </div>
-  <ul class="menu-items">
-    <li><a href="/home" ><i class="fa fa-house"></i><span>Home</span></a></li>
-    <li><a href="/chat" class="active"><i class="fa fa-comments"></i><span>Chat</span></a></li>
-    <li><a href="/about-us"><i class="fa fa-info-circle"></i><span>About</span></a></li>
-    <li><a href="/settings"><i class="fa fa-gear"></i><span>Settings</span></a></li>
-    <li><a href="/logout"><i class="fa fa-right-from-bracket"></i><span>Logout</span></a></li>
-  </ul>
-</aside>
+  <aside class="vertical-menu">
+    <div class="menu-logo">
+      <img src="/images/logo-white.png" alt="Logo">
+    </div>
+    <ul class="menu-items">
+      <li><a href="/home"><i class="fa fa-house"></i><span>Home</span></a></li>
+      <li><a href="/chat" class="active"><i class="fa fa-comments"></i><span>Chat</span></a></li>
+      <li><a href="/about-us"><i class="fa fa-info-circle"></i><span>About Us</span></a></li>
+      <li><a href="/settings"><i class="fa fa-gear"></i><span>Settings</span></a></li>
+    </ul>
+  </aside>
+
   <div class="container">
     <aside class="sidebar">
       <div class="sidebar-header">
-<img src="<%= userSettings.pfp %>" alt="User" class="profile-pic">
-<label id="username-label"><%= userSettings.username || user.username %></label>        <div class="menu-icons">
-          <!-- <i class="fa fa-circle-notch"></i>
-          <i class="fa fa-comment-alt"></i> -->
-          <!-- <i class="fa fa-ellipsis-v" style="color:#1e90ff"></i> -->
-        </div>
+        <img src="<%= userSettings.pfp %>" alt="User" class="profile-pic">
+        <label id="username-label"><%= userSettings.username || user.username %></label>
+        <div class="menu-icons"></div>
       </div>
 
       <!-- Search bar -->
@@ -41,14 +40,21 @@
 
       <!-- Chat list -->
       <div class="chat-list">
-        <div class="chat">
-          <img src="${f.pfp}" alt="Contact" id="user-img">
-          <div class="chat-info">
-            <h4 class="name-user">${f.username}</h4>
-            <p class="last-message">ultimo messaggio placeholder</p>
-          </div>
-          <span class="time">10:45</span>
-        </div>
+        <% if (friends && friends.length > 0) { %>
+          <% friends.forEach(f => { %>
+            <div class="chat">
+              <img src="<%= f.pfp %>" alt="Contact" id="user-img">
+              <div class="chat-info">
+                <h4 class="name-user"><%= f.username %></h4>
+                <p class="last-message"><%= f.lastMessage || "ultimo messaggio placeholder" %></p>
+              </div>
+              <span class="time"><%= f.lastActive || "" %></span>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <p class="empty">No friends yet.</p>
+        <% } %>
+
         <!-- Add Friend & Join Group buttons -->
         <div class="chat-buttons">
           <button id="add-friend-btn"><i class="fa fa-user-plus"></i> Add Friend</button>
@@ -79,48 +85,40 @@
       <div class="chat-search" id="chat-search">
         <input type="text" placeholder="Search messages..." id="chat-search-input">
       </div>
-<div class="messages">
-  <!-- CHAT VIEW (default visible) -->
-  <div id="chat-view" class="chat-view">
-    <div class="message incoming">
-      <p>test <span class="time">99:99</span></p>
-    </div>
-    <div class="message outgoing">
-      <p>hello world <span class="time">99:99 <i class="fa fa-check-double read"></i></span></p>
-    </div>
-    <!-- ...other messages... -->
-  </div>
 
-  <!-- SETTINGS VIEW (hidden by default) -->
-  <div id="settings-view" class="settings-view" aria-hidden="true">
-    <div class="settings-header">
-      <button class="back-to-chat" aria-label="Back"><i class="fa fa-arrow-left" style="color: white;"></i></button>
-      <h3>Chat Settings</h3>
-    </div>
+      <div class="messages">
+        <!-- CHAT VIEW -->
+        <div id="chat-view" class="chat-view">
+          <div class="message incoming">
+            <p>test <span class="time">99:99</span></p>
+          </div>
+          <div class="message outgoing">
+            <p>htest <span class="time">99:99 <i class="fa fa-check-double read"></i></span></p>
+          </div>
+        </div>
 
-    <div class="settings-body">
-      <!-- <label>
-        <input type="checkbox" id="mute-chat"> Mute chat
-      </label> -->
+        <!-- SETTINGS VIEW -->
+        <div id="settings-view" class="settings-view" aria-hidden="true">
+          <div class="settings-header">
+            <button class="back-to-chat" aria-label="Back"><i class="fa fa-arrow-left" style="color: white;"></i></button>
+            <h3>Chat Settings</h3>
+          </div>
 
-      <label>
-        <input type="checkbox" id="show-notification"> Notifications
-      </label>
-      <label>
-        <input type="checkbox" id="auto-clear" checked> Auto-Clear Chat after 15 days
-      </label>
+          <div class="settings-body">
+            <label>
+              <input type="checkbox" id="show-notification"> Notifications
+            </label>
+            <label>
+              <input type="checkbox" id="auto-clear" checked> Auto-Clear Chat after 15 days
+            </label>
 
-     <button class="clear-chat"><i class="fas fa-desktop"></i>  Clear Chat</button>
-          
-    <button class="clear-chat"><i class="fas fa-server"></i>
-Clear Server-Side Chat</button>
-     <p class="mini-text">Remember! Clearing the server-side chat is  permitted only after the 2 partecipant to the chat agreed so.</p>
-      <button class="clear-chat-delete-friend">Clear Chat and Delete Friend</button>
-
-    </div>
-  </div>
-</div>
-
+            <button class="clear-chat"><i class="fas fa-desktop"></i> Clear Chat</button>
+            <button class="clear-chat"><i class="fas fa-server"></i> Clear Server-Side Chat</button>
+            <p class="mini-text">Remember! Clearing the server-side chat is permitted only after the 2 participants agree.</p>
+            <button class="clear-chat-delete-friend">Clear Chat and Delete Friend</button>
+          </div>
+        </div>
+      </div>
 
       <!-- Footer -->
       <div class="chat-footer">
@@ -132,7 +130,6 @@ Clear Server-Side Chat</button>
       </div>
     </main>
   </div>
-  
 
   <!-- Modal -->
   <div class="modal" id="modal">
@@ -144,23 +141,29 @@ Clear Server-Side Chat</button>
       <button id="modal-submit">Submit</button>
     </div>
   </div>
-  <div class="modal" id="requests-modal">
-  <div class="modal-content">
-    <span class="close-btn">&times;</span>
-    <h3 id="requests-title">Requests</h3>
 
-    <!-- Example requests list -->
-    <div class="requests-list">
-      <div class="request">
-        <span>${req.fromUsername}</span>
-        <div class="request-actions">
-          <button class="accept-btn" data-id="${req.fromId}>Accept</button>
-          <button class="decline-btn" data-id="${req.fromId}" >Decline</button>
-        </div>
+  <!-- Requests Modal -->
+  <div class="modal" id="requests-modal">
+    <div class="modal-content">
+      <span class="close-btn">&times;</span>
+      <h3 id="requests-title">Requests</h3>
+      <div class="requests-list">
+        <% if (requests && requests.length > 0) { %>
+          <% requests.forEach(req => { %>
+            <div class="request">
+              <span><%= req.fromUsername %></span>
+              <div class="request-actions">
+                <button class="accept-btn" data-id="<%= req.fromId %>">Accept</button>
+                <button class="decline-btn" data-id="<%= req.fromId %>">Decline</button>
+              </div>
+            </div>
+          <% }) %>
+        <% } else { %>
+          <p class="empty">No requests.</p>
+        <% } %>
       </div>
     </div>
   </div>
-</div>
 
   <script src="/js/code-chat.js"></script>
 </body>

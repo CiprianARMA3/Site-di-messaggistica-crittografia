@@ -2,6 +2,20 @@
 document.addEventListener("DOMContentLoaded", () => {
   const csrfToken = document.getElementById("csrfToken")?.value;
 
+  // ---------------- NOTIFICATION ----------------
+  function showNotification(message, type = "success") {
+    const box = document.getElementById("notification");
+    if (!box) return; // fail-safe
+
+    box.textContent = message;
+    box.className = "notification " + type + " show";
+
+    // Auto-hide after 3s
+    setTimeout(() => {
+      box.classList.remove("show");
+    }, 3000);
+  }
+
   // ---------------- MODALS ----------------
   const addFriendBtn = document.getElementById("add-friend-btn");
   const joinGroupBtn = document.getElementById("join-group-btn");
@@ -40,48 +54,48 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // ---------------- SEND FRIEND REQUEST ----------------
-modalSubmit.addEventListener("click", async () => {
-  const friendId = modalInput.value.trim(); // ✅ expects ID
-  if (!friendId) {
-    alert("Please enter a valid friend ID.");
-    return;
-  }
-
-  try {
-    // 🔎 Pre-check friend list before sending
-    const friendsRes = await fetch("/friends/list");
-    const friendsData = await friendsRes.json();
-    const alreadyFriend = friendsData.friends.some(f => String(f.id) === String(friendId));
-
-    if (alreadyFriend) {
-      alert("❌ You are already friends with this user.");
-      return; // ⛔ do not send request
+  modalSubmit.addEventListener("click", async () => {
+    const friendId = modalInput.value.trim(); // expects ID
+    if (!friendId) {
+      showNotification("⚠️ Please enter a valid friend ID.", "error");
+      return;
     }
 
-    // If not already a friend, proceed with request
-    const res = await fetch("/friends/request", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...(csrfToken ? { "CSRF-Token": csrfToken } : {})
-      },
-      body: JSON.stringify({ friendId })
-    });
+    try {
+      // Pre-check friend list before sending
+      const friendsRes = await fetch("/friends/list");
+      const friendsData = await friendsRes.json();
+      const alreadyFriend = friendsData.friends.some(f => String(f.id) === String(friendId));
 
-    const data = await res.json();
+      if (alreadyFriend) {
+        showNotification("❌ You are already friends with this user.", "error");
+        return;
+      }
 
-    if (data.success) {
-      alert("✅ Friend request sent!");
-      modal.style.display = "none";
-      updateRequestCounter(); // refresh counter
-    } else {
-      alert("❌ Error: " + (data.error || "Something went wrong"));
+      // If not already a friend, proceed with request
+      const res = await fetch("/friends/request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrfToken ? { "CSRF-Token": csrfToken } : {})
+        },
+        body: JSON.stringify({ friendId })
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        showNotification("✅ Friend request sent!", "success");
+        modal.style.display = "none";
+        updateRequestCounter(); // refresh counter
+      } else {
+        showNotification("❌ " + (data.error || "Something went wrong"), "error");
+      }
+    } catch (err) {
+      console.error(err);
+      showNotification("⚠️ Request failed", "error");
     }
-  } catch (err) {
-    console.error(err);
-    alert("⚠️ Request failed");
-  }
-});
+  });
 
   // ---------------- LOAD REQUESTS ----------------
   async function loadRequests() {
@@ -179,7 +193,6 @@ modalSubmit.addEventListener("click", async () => {
     } catch (err) {
       console.error(err);
     }
-
   }
 
   // ---------------- REQUEST COUNTER ----------------
@@ -270,10 +283,91 @@ modalSubmit.addEventListener("click", async () => {
       }
     });
   }
-  
 
   // ---------------- INIT ----------------
   updateRequestCounter();
   loadFriends();
 });
 
+// public/js/code-chat.js
+
+document.addEventListener("DOMContentLoaded", () => {
+  const chatBox = document.getElementById("chat-box");
+  const messageForm = document.getElementById("message-form");
+  const messageInput = document.getElementById("message-input");
+
+  // Friend ID and current user ID come from <body data-*>
+  const friendId = document.body.dataset.friendId;
+  const userId = Number(document.body.dataset.userId);
+
+  // Load existing messages
+  async function loadMessages() {
+    try {
+      const res = await fetch(`/chat/${friendId}`);
+      const data = await res.json();
+
+      chatBox.innerHTML = "";
+      (data.messages || []).forEach(msg => appendMessage(msg));
+      chatBox.scrollTop = chatBox.scrollHeight;
+    } catch (err) {
+      console.error("❌ Failed to load messages", err);
+    }
+  }
+
+  // Append one message to chat
+  function appendMessage(msg) {
+    const div = document.createElement("div");
+    div.classList.add("message");
+
+    if (msg.senderId === userId) {
+      div.classList.add("sent");
+    } else {
+      div.classList.add("received");
+    }
+
+    if (msg.type === "text") {
+      div.textContent = msg.content;
+    } else if (msg.type === "image") {
+      const img = document.createElement("img");
+      img.src = msg.content;
+      div.appendChild(img);
+    } else {
+      div.textContent = `[${msg.type} message]`;
+    }
+
+    chatBox.appendChild(div);
+  }
+
+  // Send new message
+  messageForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const content = messageInput.value.trim();
+    if (!content) return;
+
+    try {
+      const res = await fetch(`/chat/${friendId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "csrf-token": document.querySelector("meta[name=csrf-token]").content
+        },
+        body: JSON.stringify({ content, type: "text" })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        appendMessage({ senderId: userId, content, type: "text" });
+        messageInput.value = "";
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+    } catch (err) {
+      console.error("❌ Failed to send message", err);
+    }
+  });
+
+  // Initial load
+  loadMessages();
+
+  // Auto-refresh every 3s (you can remove this if you add real-time later)
+  setInterval(loadMessages, 3000);
+});

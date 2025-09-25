@@ -398,7 +398,7 @@ body.night .send-btn:hover {
 
 .chat-buttons button {
   /* background: #1e90ff; */
-  background: linear-gradient(135deg, #1e90ff, #00e0ff);
+  background: linear-gradient(135deg, #0055ab, #017786);
     transition: transform 0.3s ease,
               box-shadow 0.3s ease,
               background 0.3s ease;
@@ -419,7 +419,7 @@ body.night .send-btn:hover {
 
 .chat-buttons button:hover {
   transform: translateY(-4px);
-  background: linear-gradient(135deg, #00e0ff, #1e90ff);
+  background: linear-gradient(135deg, #0169d1, #01a3b8);
   box-shadow: 0 0 25px rgba(30,144,255,0.7);
 }
 
@@ -1238,4 +1238,39 @@ body.night .settings-header {
     0 0 5px rgba(255, 0, 0, 1),
     0 0 10px rgba(255, 0, 0, 1),
     0 0 15px rgba(255, 0, 0, 1);
+}
+
+
+/* Notification box */
+.notification {
+  position: fixed;
+  top: -60px; /* hidden above screen */
+  left: 50%;
+  transform: translateX(-50%);
+  background: #28a745; /* default green */
+  color: #fff;
+  padding: 14px 22px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  font-size: 15px;
+  font-weight: bold;
+  z-index: 2000;
+  opacity: 0;
+  transition: top 0.5s ease, opacity 0.5s ease;
+}
+
+/* Visible state */
+.notification.show {
+  top: 20px;
+  opacity: 1;
+}
+
+/* Error (red) */
+.notification.error {
+  background: #dc3545;
+}
+
+/* Success (green) */
+.notification.success {
+  background: #28a745;
 }
