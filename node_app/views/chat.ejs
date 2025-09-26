@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="icon" href="/images/logo-white.png">
 </head>
-<body class="night">
+<body class="night" data-user-id="<%= user.id %>"  data-friend-id="<%= friends && friends.length > 0 ? friends[0].id : '' %>">
   <div id="notification" class="notification"></div>
 
   <!-- Vertical Sidebar Menu -->
@@ -66,12 +66,13 @@
 
     <!-- Main Chat Window -->
     <main class="chat-window">
+      
       <!-- Chat header -->
       <div class="chat-header">
-        <img src="" alt="Contact">
+        <img src="/images/blank.png" alt=" ">
         <div class="chat-contact">
-          <h4 class="chat-contact">person</h4>
-          <p class="status online">online</p>
+          <h4 class="chat-contact">Choose a Contact</h4>
+          <p class="status offline">offline</p>
         </div>
         <div class="chat-actions">
           <i class="fa fa-search" id="chat-search-toggle"></i>
@@ -83,18 +84,23 @@
 
       <!-- Hidden chat search -->
       <div class="chat-search" id="chat-search">
+        <i class="fa fa-search"></i>
         <input type="text" placeholder="Search messages..." id="chat-search-input">
       </div>
+            <!-- <div class="search2" id="chat-search">
+        <i class="fa fa-search"></i>
+        <input type="text" id="chat-search" placeholder="Search or start new chat">
+      </div>  -->
 
       <div class="messages">
         <!-- CHAT VIEW -->
         <div id="chat-view" class="chat-view">
-          <div class="message incoming">
-            <p>test <span class="time">99:99</span></p>
+          <!-- <div class="message incoming">
+            <p> <span class="time"></span></p>
           </div>
           <div class="message outgoing">
-            <p>htest <span class="time">99:99 <i class="fa fa-check-double read"></i></span></p>
-          </div>
+            <p> <span class="time"> <i class="fa fa-check-double read"></i></span></p>
+          </div> -->
         </div>
 
         <!-- SETTINGS VIEW -->
@@ -122,7 +128,6 @@
 
       <!-- Footer -->
       <div class="chat-footer">
-        <i class="fa fa-smile"></i>
         <i class="fa fa-paperclip"></i>
         <input type="text" placeholder="Type a message">
         <i class="fa fa-microphone"></i>

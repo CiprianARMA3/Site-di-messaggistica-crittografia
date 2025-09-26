@@ -2,115 +2,85 @@
 document.addEventListener("DOMContentLoaded", () => {
   const csrfToken = document.getElementById("csrfToken")?.value;
 
-  // ---------------- NOTIFICATION ----------------
+  // ---------- Helpers ----------
+  function $(sel) { return document.querySelector(sel); }
+  function $all(sel) { return Array.from(document.querySelectorAll(sel)); }
+
   function showNotification(message, type = "success") {
     const box = document.getElementById("notification");
-    if (!box) return; // fail-safe
-
+    if (!box) return;
     box.textContent = message;
-    box.className = "notification " + type + " show";
-
-    // Auto-hide after 3s
-    setTimeout(() => {
-      box.classList.remove("show");
-    }, 3000);
+    box.className = `notification ${type} show`;
+    setTimeout(() => box.classList.remove("show"), 3000);
   }
 
-  // ---------------- MODALS ----------------
-  const addFriendBtn = document.getElementById("add-friend-btn");
-  const joinGroupBtn = document.getElementById("join-group-btn");
+  // ---------- Elements (safe lookup) ----------
+  const chatView = document.getElementById("chat-view");
+  const chatHeaderImg = document.querySelector(".chat-header img");
+  const chatHeaderName = document.querySelector(".chat-header h4");
+  const chatHeaderStatus = document.querySelector(".chat-header .status");
+  const chatSearchToggle = document.getElementById("chat-search-toggle");
+  const chatSearchBox = document.getElementById("chat-search"); // hidden search UI
+  const chatSearchInput = document.getElementById("chat-search-input");
+  // Sidebar search might be duplicated in your template -> attach to all
+  const sidebarSearchInputs = document.querySelectorAll('input#sidebar-search');
+  const requestsBtn = document.getElementById("requests");
+  const requestsModal = document.getElementById("requests-modal");
   const modal = document.getElementById("modal");
   const modalTitle = document.getElementById("modal-title");
   const modalInput = document.getElementById("modal-input");
   const modalSubmit = document.getElementById("modal-submit");
-  const modalClose = modal.querySelector(".close-btn");
+  const incomingRequests = document.getElementById("incoming-requests");
+  const addFriendBtn = document.getElementById("add-friend-btn");
+  const joinGroupBtn = document.getElementById("join-group-btn");
 
-  const requestsBtn = document.getElementById("requests");
-  const requestsModal = document.getElementById("requests-modal");
-  const requestsCloseBtns = requestsModal.querySelectorAll(".close-btn");
+  // Small state
+  let lastFriends = []; // latest friends array returned by API
+  let activeChatIndex = -1;
 
-  // Open "Add Friend" modal
-  addFriendBtn.addEventListener("click", () => {
+  // ---------- Modals ----------
+  if (addFriendBtn) addFriendBtn.addEventListener("click", () => {
+    if (!modal) return;
     modal.style.display = "flex";
     modalTitle.textContent = "Add Friend";
     modalInput.value = "";
   });
-
-  // Open "Join Group" modal
-  joinGroupBtn.addEventListener("click", () => {
+  if (joinGroupBtn) joinGroupBtn.addEventListener("click", () => {
+    if (!modal) return;
     modal.style.display = "flex";
     modalTitle.textContent = "Join Group";
     modalInput.value = "";
   });
-
-  // Close modals
-  modalClose.addEventListener("click", () => (modal.style.display = "none"));
-  requestsCloseBtns.forEach(btn =>
-    btn.addEventListener("click", () => (requestsModal.style.display = "none"))
-  );
+  if (modal) {
+    const close = modal.querySelector(".close-btn");
+    if (close) close.addEventListener("click", () => (modal.style.display = "none"));
+  }
+  if (requestsModal) {
+    requestsModal.querySelectorAll(".close-btn").forEach(btn =>
+      btn.addEventListener("click", () => (requestsModal.style.display = "none"))
+    );
+  }
   window.addEventListener("click", e => {
     if (e.target === modal) modal.style.display = "none";
     if (e.target === requestsModal) requestsModal.style.display = "none";
   });
 
-  // ---------------- SEND FRIEND REQUEST ----------------
-  modalSubmit.addEventListener("click", async () => {
-    const friendId = modalInput.value.trim(); // expects ID
-    if (!friendId) {
-      showNotification("⚠️ Please enter a valid friend ID.", "error");
-      return;
-    }
-
-    try {
-      // Pre-check friend list before sending
-      const friendsRes = await fetch("/friends/list");
-      const friendsData = await friendsRes.json();
-      const alreadyFriend = friendsData.friends.some(f => String(f.id) === String(friendId));
-
-      if (alreadyFriend) {
-        showNotification("❌ You are already friends with this user.", "error");
-        return;
-      }
-
-      // If not already a friend, proceed with request
-      const res = await fetch("/friends/request", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(csrfToken ? { "CSRF-Token": csrfToken } : {})
-        },
-        body: JSON.stringify({ friendId })
-      });
-
-      const data = await res.json();
-
-      if (data.success) {
-        showNotification("✅ Friend request sent!", "success");
-        modal.style.display = "none";
-        updateRequestCounter(); // refresh counter
-      } else {
-        showNotification("❌ " + (data.error || "Something went wrong"), "error");
-      }
-    } catch (err) {
-      console.error(err);
-      showNotification("⚠️ Request failed", "error");
-    }
-  });
-
-  // ---------------- LOAD REQUESTS ----------------
+  // ---------- Friend Requests API ----------
   async function loadRequests() {
+    if (!requestsModal) return;
     try {
       const res = await fetch("/friends/requests");
       const data = await res.json();
       const list = requestsModal.querySelector(".requests-list");
+      if (!list) return;
       list.innerHTML = "";
-
-      if (!data.requests.length) {
+      const requests = data.requests || [];
+      if (!requests.length) {
         list.innerHTML = `<p>No requests</p>`;
       } else {
-        data.requests.forEach(req => {
+        requests.forEach(req => {
           const div = document.createElement("div");
-          div.classList.add("request");
+          div.className = "request";
           div.innerHTML = `
             <span>${req.fromUsername}</span>
             <div class="request-actions">
@@ -118,162 +88,195 @@ document.addEventListener("DOMContentLoaded", () => {
               <button class="decline-btn" data-id="${req.fromId}">Decline</button>
             </div>
           `;
-
-          // Accept
           div.querySelector(".accept-btn").addEventListener("click", async e => {
             const fromId = e.target.getAttribute("data-id");
             await fetch("/friends/accept", {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                ...(csrfToken ? { "CSRF-Token": csrfToken } : {})
-              },
+              headers: { "Content-Type": "application/json", ...(csrfToken ? { "CSRF-Token": csrfToken } : {}) },
               body: JSON.stringify({ fromId })
             });
-            loadRequests();
-            loadFriends();
+            await loadRequests();
+            await loadFriends();
           });
-
-          // Decline
           div.querySelector(".decline-btn").addEventListener("click", async e => {
             const fromId = e.target.getAttribute("data-id");
             await fetch("/friends/decline", {
               method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                ...(csrfToken ? { "CSRF-Token": csrfToken } : {})
-              },
+              headers: { "Content-Type": "application/json", ...(csrfToken ? { "CSRF-Token": csrfToken } : {}) },
               body: JSON.stringify({ fromId })
             });
-            loadRequests();
+            await loadRequests();
           });
-
           list.appendChild(div);
         });
       }
-
-      updateRequestCounter(data.requests.length);
+      updateRequestCounter(requests.length);
     } catch (err) {
-      console.error(err);
+      console.error("loadRequests error", err);
     }
   }
-
-  // Open Requests modal
-  requestsBtn.addEventListener("click", () => {
+  if (requestsBtn) requestsBtn.addEventListener("click", () => {
+    if (!requestsModal) return;
     requestsModal.style.display = "flex";
     loadRequests();
   });
 
-  // ---------------- FRIEND LIST ----------------
+  async function updateRequestCounter(count) {
+    try {
+      if (typeof count === "number") {
+        incomingRequests.textContent = count > 0 ? count : "";
+        incomingRequests.style.display = count > 0 ? "inline-block" : "none";
+        return;
+      }
+      const res = await fetch("/friends/requests");
+      const data = await res.json();
+      const c = (data.requests || []).length;
+      incomingRequests.textContent = c > 0 ? c : "";
+      incomingRequests.style.display = c > 0 ? "inline-block" : "none";
+    } catch (err) {
+      console.error("updateRequestCounter error", err);
+    }
+  }
+
+  // ---------- Friend list (sidebar) ----------
   async function loadFriends() {
     try {
       const res = await fetch("/friends/list");
       const data = await res.json();
       const chatList = document.querySelector(".chat-list");
+      if (!chatList) return;
+      const buttons = chatList.querySelector(".chat-buttons"); // keep buttons
+      lastFriends = Array.isArray(data.friends) ? data.friends : [];
 
-      // Keep the Add Friend / Join Group / Requests buttons
-      const buttons = chatList.querySelector(".chat-buttons");
-
+      // render fresh
       chatList.innerHTML = "";
-      data.friends.forEach(f => {
+      lastFriends.forEach((f, i) => {
         const div = document.createElement("div");
-        div.classList.add("chat");
+        div.className = "chat";
+        div.setAttribute("data-friend-id", String(f.id));
         div.innerHTML = `
           <img src="${f.pfp}" alt="Contact" class="user-img">
           <div class="chat-info">
             <h4 class="name-user">${f.username}</h4>
-            <p class="last-message">ultimo messaggio placeholder</p>
+            <p class="last-message">${f.lastMessage || "ultimo messaggio placeholder"}</p>
           </div>
-          <span class="time">10:45</span>
+          <span class="time">${f.lastActive || ""}</span>
         `;
+        // click activates the chat
+        div.addEventListener("click", () => {
+          activateFriendChat(f, i);
+          // visual selection
+          document.querySelectorAll(".chat-list .chat").forEach(el => el.classList.remove("active"));
+          div.classList.add("active");
+        });
         chatList.appendChild(div);
       });
 
       if (buttons) chatList.appendChild(buttons);
+
+      // Auto-activate friend:
+      const currentFriendId = document.body.dataset.friendId;
+      if (currentFriendId) {
+        // try to find friend in list and activate it
+        const idx = lastFriends.findIndex(ff => String(ff.id) === String(currentFriendId));
+        if (idx !== -1) {
+          activateFriendChat(lastFriends[idx], idx);
+          const el = document.querySelector(`.chat-list .chat[data-friend-id="${currentFriendId}"]`);
+          if (el) { document.querySelectorAll(".chat-list .chat").forEach(e => e.classList.remove("active")); el.classList.add("active"); }
+          return;
+        }
+      }
+
+      if (lastFriends.length > 0) {
+        // no friend selected -> activate first friend
+        activateFriendChat(lastFriends[0], 0);
+        const firstEl = chatList.querySelector(".chat");
+        if (firstEl) {
+          document.querySelectorAll(".chat-list .chat").forEach(e => e.classList.remove("active"));
+          firstEl.classList.add("active");
+        }
+      } else {
+        // clear chat view when no friends
+        if (chatView) chatView.innerHTML = `<p class="empty">Select a user to chat with</p>`;
+      }
     } catch (err) {
-      console.error(err);
+      console.error("loadFriends error", err);
     }
   }
 
-  // ---------------- REQUEST COUNTER ----------------
-  const requestCounter = document.getElementById("incoming-requests");
-
-  function updateRequestCounter(count) {
-    if (typeof count === "number") {
-      requestCounter.textContent = count > 0 ? count : "";
-      requestCounter.style.display = count > 0 ? "inline-block" : "none";
-      return;
-    }
-
-    fetch("/friends/requests")
-      .then(res => res.json())
-      .then(data => {
-        const c = data.requests.length;
-        requestCounter.textContent = c > 0 ? c : "";
-        requestCounter.style.display = c > 0 ? "inline-block" : "none";
-      })
-      .catch(err => console.error("Failed to update request counter:", err));
-  }
-
-  setInterval(updateRequestCounter, 10000);
-
-  // ---------------- SEARCH ----------------
-  const sidebarSearch = document.getElementById("sidebar-search");
-  sidebarSearch.addEventListener("input", () => {
-    const query = sidebarSearch.value.toLowerCase();
-    document.querySelectorAll(".chat").forEach(chat => {
-      const name = chat.querySelector("h4")?.textContent.toLowerCase() || "";
-      const lastMsg = chat.querySelector("p")?.textContent.toLowerCase() || "";
-      chat.style.display =
-        name.includes(query) || lastMsg.includes(query) ? "flex" : "none";
+  // ---------- Sidebar search (friend list) ----------
+  function filterFriendList(query) {
+    const q = String(query || "").trim().toLowerCase();
+    document.querySelectorAll(".chat-list .chat").forEach(chatEl => {
+      const name = chatEl.querySelector(".name-user")?.textContent?.toLowerCase() || "";
+      const lastMsg = chatEl.querySelector(".last-message")?.textContent?.toLowerCase() || "";
+      const show = !q || name.includes(q) || lastMsg.includes(q);
+      chatEl.style.display = show ? "flex" : "none";
     });
+  }
+  // attach to all possible sidebar search inputs (in case of duplicates)
+  sidebarSearchInputs.forEach(input => {
+    input.addEventListener("input", e => filterFriendList(e.target.value));
   });
 
-  // ---------------- CHAT SEARCH ----------------
-  const chatSearchToggle = document.getElementById("chat-search-toggle");
-  const chatSearch = document.getElementById("chat-search");
-  const chatSearchInput = document.getElementById("chat-search-input");
+  // ---------- Chat search (messages) ----------
 
+if (chatSearchToggle && chatSearchBox && chatSearchInput) {
   chatSearchToggle.addEventListener("click", () => {
-    chatSearch.style.display =
-      chatSearch.style.display === "block" ? "none" : "block";
-    chatSearchInput.value = "";
-    document
-      .querySelectorAll(".messages .message")
-      .forEach(msg => (msg.style.background = ""));
+    chatSearchBox.classList.toggle("active"); // toggle class
+
+    if (chatSearchBox.classList.contains("active")) {
+      chatSearchInput.focus();
+    } else {
+      chatSearchInput.value = "";
+      highlightMessages("");
+    }
   });
 
-  chatSearchInput.addEventListener("input", () => {
-    const query = chatSearchInput.value.toLowerCase();
-    document.querySelectorAll(".messages .message").forEach(msg => {
-      const text = msg.textContent.toLowerCase();
-      msg.style.background =
-        query && text.includes(query) ? "rgba(0,128,255,0.3)" : "";
-    });
+  chatSearchInput.addEventListener("input", e => {
+    highlightMessages(e.target.value);
+  });
+}
+
+function highlightMessages(query) {
+  if (!chatView) return;
+  const q = String(query || "").trim().toLowerCase();
+  const messages = chatView.querySelectorAll(".message");
+  let firstMatch = null;
+
+  messages.forEach(msg => {
+    const text = msg.textContent.toLowerCase();
+    if (q && text.includes(q)) {
+      msg.classList.add("matched");
+      msg.style.background = "rgba(0,128,255,0.18)";
+      if (!firstMatch) firstMatch = msg;
+    } else {
+      msg.classList.remove("matched");
+      msg.style.background = "";
+    }
   });
 
-  // ---------------- SETTINGS TOGGLE ----------------
+  if (firstMatch) {
+    firstMatch.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+}
+
+  // ---------- Settings toggle (ellipsis) ----------
   const ellipsisIcon = document.querySelector(".chat-actions .fa-ellipsis-v");
-  const chatView = document.getElementById("chat-view");
   const settingsView = document.getElementById("settings-view");
   const backBtn = document.querySelector("#settings-view .back-to-chat");
-
   if (ellipsisIcon && chatView && settingsView) {
     ellipsisIcon.addEventListener("click", () => {
       const open = settingsView.classList.toggle("active");
       chatView.classList.toggle("hidden", open);
       settingsView.setAttribute("aria-hidden", !open);
-      if (open)
-        settingsView.querySelector("input, button, [tabindex]")?.focus();
     });
-
-    backBtn.addEventListener("click", () => {
+    if (backBtn) backBtn.addEventListener("click", () => {
       settingsView.classList.remove("active");
       chatView.classList.remove("hidden");
       settingsView.setAttribute("aria-hidden", "true");
       ellipsisIcon.focus();
     });
-
     document.addEventListener("keydown", e => {
       if (e.key === "Escape" && settingsView.classList.contains("active")) {
         settingsView.classList.remove("active");
@@ -284,90 +287,116 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ---------------- INIT ----------------
-  updateRequestCounter();
-  loadFriends();
-});
+  // ---------- Messages (load/send) ----------
+  const messageInput = document.querySelector(".chat-footer input[type=text]");
+  const sendBtn = document.querySelector(".chat-footer .send-btn");
+  const userId = Number(document.body.dataset.userId || 0);
 
-// public/js/code-chat.js
-
-document.addEventListener("DOMContentLoaded", () => {
-  const chatBox = document.getElementById("chat-box");
-  const messageForm = document.getElementById("message-form");
-  const messageInput = document.getElementById("message-input");
-
-  // Friend ID and current user ID come from <body data-*>
-  const friendId = document.body.dataset.friendId;
-  const userId = Number(document.body.dataset.userId);
-
-  // Load existing messages
   async function loadMessages() {
+    const friendId = document.body.dataset.friendId;
+    if (!friendId) return;
     try {
       const res = await fetch(`/chat/${friendId}`);
       const data = await res.json();
-
-      chatBox.innerHTML = "";
-      (data.messages || []).forEach(msg => appendMessage(msg));
-      chatBox.scrollTop = chatBox.scrollHeight;
+      if (!chatView) return;
+      chatView.innerHTML = "";
+      (data.messages || []).forEach(m => appendMessage(m));
+      chatView.scrollTop = chatView.scrollHeight;
     } catch (err) {
-      console.error("❌ Failed to load messages", err);
+      console.error("loadMessages error", err);
     }
   }
 
-  // Append one message to chat
   function appendMessage(msg) {
+    if (!chatView) return;
     const div = document.createElement("div");
-    div.classList.add("message");
-
-    if (msg.senderId === userId) {
-      div.classList.add("sent");
-    } else {
-      div.classList.add("received");
-    }
-
-    if (msg.type === "text") {
-      div.textContent = msg.content;
-    } else if (msg.type === "image") {
-      const img = document.createElement("img");
-      img.src = msg.content;
-      div.appendChild(img);
-    } else {
-      div.textContent = `[${msg.type} message]`;
-    }
-
-    chatBox.appendChild(div);
+    div.className = "message " + (msg.senderId === userId ? "outgoing" : "incoming");
+    const p = document.createElement("p");
+    p.innerHTML = `${msg.content} <span class="time">${msg.time || ""}</span>`;
+    div.appendChild(p);
+    chatView.appendChild(div);
   }
 
-  // Send new message
-  messageForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  async function sendMessage() {
+    if (!messageInput) return;
     const content = messageInput.value.trim();
-    if (!content) return;
-
+    const friendId = document.body.dataset.friendId;
+    if (!content || !friendId) return;
     try {
       const res = await fetch(`/chat/${friendId}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "csrf-token": document.querySelector("meta[name=csrf-token]").content
-        },
+        headers: { "Content-Type": "application/json", ...(csrfToken ? { "CSRF-Token": csrfToken } : {}) },
         body: JSON.stringify({ content, type: "text" })
       });
-
       const data = await res.json();
       if (data.success) {
-        appendMessage({ senderId: userId, content, type: "text" });
+        appendMessage({ senderId: userId, content, type: "text", time: new Date().toLocaleTimeString() });
         messageInput.value = "";
-        chatBox.scrollTop = chatBox.scrollHeight;
+        if (chatView) chatView.scrollTop = chatView.scrollHeight;
+      } else {
+        console.warn("sendMessage server response:", data);
       }
     } catch (err) {
-      console.error("❌ Failed to send message", err);
+      console.error("sendMessage error", err);
     }
-  });
+  }
+  if (sendBtn) sendBtn.addEventListener("click", sendMessage);
+  if (messageInput) messageInput.addEventListener("keypress", e => { if (e.key === "Enter") sendMessage(); });
 
-  // Initial load
-  loadMessages();
+  // ---------- Status updater ----------
+  let statusUpdaterId = null;
+  function startStatusUpdater(friendId) {
+    if (statusUpdaterId) clearInterval(statusUpdaterId);
+    const headerStatus = chatHeaderStatus;
+    statusUpdaterId = setInterval(async () => {
+      try {
+        const res = await fetch(`/friends/status/${friendId}`);
+        const data = await res.json();
+        if (!headerStatus) return;
+        if (data.online) {
+          headerStatus.textContent = "online";
+          headerStatus.classList.remove("offline");
+          headerStatus.classList.add("online");
+        } else {
+          headerStatus.textContent = "offline";
+          headerStatus.classList.remove("online");
+          headerStatus.classList.add("offline");
+        }
+      } catch (err) {
+        console.error("status update error", err);
+      }
+    }, 5000);
+  }
 
-  // Auto-refresh every 3s (you can remove this if you add real-time later)
-  setInterval(loadMessages, 3000);
+  // ---------- Activate friend chat ----------
+  function activateFriendChat(friend, idx = 0) {
+    if (!friend) return;
+    document.body.dataset.friendId = friend.id;
+    activeChatIndex = idx;
+    if (chatHeaderImg) chatHeaderImg.src = friend.pfp || "/images/blank.png";
+    if (chatHeaderName) chatHeaderName.textContent = friend.username || "Unknown";
+    if (chatHeaderStatus) {
+      if (friend.online) {
+        chatHeaderStatus.textContent = "online";
+        chatHeaderStatus.classList.remove("offline");
+        chatHeaderStatus.classList.add("online");
+      } else {
+        chatHeaderStatus.textContent = "offline";
+        chatHeaderStatus.classList.remove("online");
+        chatHeaderStatus.classList.add("offline");
+      }
+    }
+    startStatusUpdater(friend.id);
+    if (chatView) chatView.innerHTML = "";
+    loadMessages();
+  }
+
+  // ---------- Init ----------
+  (async function init() {
+    updateRequestCounter();
+    await loadFriends();
+    // keep messages fresh
+    setInterval(loadMessages, 3000);
+  })();
+
 });

@@ -16,6 +16,8 @@ const session = require("express-session");
 const chatDB = require("./chatDB");
 const { getMessages, addMessage, getFriends, getRequests } = chatDB;
 const { db } = require("./db");
+const { userOnline, userOffline, getOnlineUsers, isOnline } = require("./onlineUsers");
+
 
 const {
   getSettings,
@@ -221,13 +223,20 @@ app.post("/settings/username", requireAuth, (req, res) => {
   if (!newUsername || newUsername.trim().length < 3) {
     return res.status(400).render("settings", {
       csrfToken: res.locals.csrfToken,
-      user: req.user,
+      user: req.session.user,
       userSettings: getSettings(userId),
       error: "❌ Username too short."
     });
   }
 
-  app.post("/chat/:friendId", requireAuth, async (req, res) => {
+  // update username logic here...
+
+  res.redirect("/settings");
+}); // ✅ properly closes the route callback
+
+
+// Separate chat route
+app.post("/chat/:friendId", requireAuth, async (req, res) => {
   try {
     const friendId = req.params.friendId;
     const { content, type } = req.body;
@@ -252,19 +261,6 @@ app.post("/settings/username", requireAuth, (req, res) => {
   }
 });
 
-  if (!canChangeUsername(userId)) {
-    return res.status(429).render("settings", {
-      csrfToken: res.locals.csrfToken,
-      user: req.user,
-      userSettings: getSettings(userId),
-      error: "❌ You can only change username once per week."
-    });
-  }
-
-  updateSettings(userId, { username: newUsername.trim() });
-  res.redirect("/settings");
-});
-
 // ---------------- Change password ----------------
 const passwordChangeLog = {};
 function canChangePassword(userId) {
@@ -284,7 +280,7 @@ app.post("/settings/password", requireAuth, async (req, res) => {
   if (!currentPassword || !newPassword) {
     return res.status(400).render('settings', {
       csrfToken: res.locals.csrfToken,
-      user: req.user,
+      user: req.session.user,
       userSettings: getSettings(userId),
       error: "❌ Please fill in all fields."
     });
@@ -293,7 +289,7 @@ app.post("/settings/password", requireAuth, async (req, res) => {
   if (!canChangePassword(userId)) {
     return res.status(429).render('settings', {
       csrfToken: res.locals.csrfToken,
-      user: req.user,
+      user: req.session.user,
       userSettings: getSettings(userId),
       error: "❌ You can only change password once per week."
     });
@@ -304,7 +300,7 @@ app.post("/settings/password", requireAuth, async (req, res) => {
       if (err || !row) {
         return res.status(500).render('settings', {
           csrfToken: res.locals.csrfToken,
-          user: req.user,
+          user: req.session.user,
           userSettings: getSettings(userId),
           error: "⚠️ Server error."
         });
@@ -314,7 +310,7 @@ app.post("/settings/password", requireAuth, async (req, res) => {
       if (!match) {
         return res.status(400).render('settings', {
           csrfToken: res.locals.csrfToken,
-          user: req.user,
+          user: req.session.user,
           userSettings: getSettings(userId),
           error: "❌ Current password is incorrect."
         });
@@ -325,7 +321,7 @@ app.post("/settings/password", requireAuth, async (req, res) => {
         if (err2) {
           return res.status(500).render('settings', {
             csrfToken: res.locals.csrfToken,
-            user: req.user,
+            user: req.session.user,
             userSettings: getSettings(userId),
             error: "⚠️ Could not update password."
           });
@@ -339,7 +335,7 @@ app.post("/settings/password", requireAuth, async (req, res) => {
     console.error(e);
     return res.status(500).render('settings', {
       csrfToken: res.locals.csrfToken,
-      user: req.user,
+      user: req.session.user,
       userSettings: getSettings(userId),
       error: "⚠️ Unexpected error."
     });
@@ -366,15 +362,67 @@ app.get("/chat", async (req, res) => {
     }
 
     res.render("chat", {
-      user: req.session.user,
-      userSettings,   // ✅ now chat.ejs won’t crash
+    csrfToken: req.csrfToken(),
+    user: req.session.user,       // 👈 gives you user.username
+    userSettings,      // 👈 gives you userSettings.pfp & .username  // ✅ now chat.ejs won’t crash
       friends,
-      requests
+      requests,
+    friendId: friends.length ? friends[0].id : null // open first friend by default
     });
 
   } catch (err) {
     console.error("Error loading chat:", err);
     res.status(500).send("Error loading chat");
+  }
+});
+app.get("/chat/:friendId", requireAuth, async (req, res) => {
+  try {
+    const userId = Number(req.session.user.id);
+    const friendId = Number(req.params.friendId);
+    if (!friendId) return res.status(400).json({ error: "Missing friendId" });
+
+    const messages = await chatDB.getMessages(userId, friendId);
+
+    // Normalize messages for client: decrypt already done inside chatDB.getMessages
+    const normalized = (messages || []).map(m => ({
+      senderId: m.senderId,
+      content: m.content,
+      type: m.type,
+      // if messages stored with timestamp, expose a human time; otherwise fallback
+      time: m.timestamp ? new Date(m.timestamp).toLocaleTimeString() : (m.time || "")
+    }));
+
+    res.json({ messages: normalized });
+  } catch (err) {
+    console.error("Error getting messages:", err);
+    res.status(500).json({ error: "Failed to load messages" });
+  }
+});
+
+// Receive a new message and store it
+app.post("/chat/:friendId", requireAuth, async (req, res) => {
+  try {
+    const senderId = Number(req.session.user.id);
+    const friendId = Number(req.params.friendId);
+    const { content, type } = req.body;
+
+    if (!friendId || !content || !type) {
+      return res.status(400).json({ error: "Invalid message format" });
+    }
+
+    const message = {
+      senderId,
+      content,
+      type,
+      timestamp: Date.now()
+    };
+
+    await chatDB.addMessage(senderId, friendId, message);
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error sending message:", err);
+    res.status(500).json({ error: "Failed to send message" });
   }
 });
 
@@ -461,6 +509,12 @@ app.get("/friends/requests", requireAuth, (req, res) => {
     res.json({ requests: requestsWithNames, count: requestsWithNames.length });
   });
 });
+
+app.get("/friends/status/:id", (req, res) => {
+  const { id } = req.params;
+  res.json({ online: isOnline(id) });
+});
+
 
 // Accept friend request
 app.post("/friends/accept", requireAuth, (req, res) => {
@@ -549,14 +603,13 @@ app.get("/friends/list", requireAuth, (req, res) => {
 
       const friends = rows.map(r => {
         const userSettings = getSettings(r.id);
-
-        // ✅ pull viewed username from LowDB if it exists
         const viewedName = userSettings?.username || decrypt(r.username) || "Unknown";
 
         return {
           id: r.id,
           username: viewedName,
-          pfp: userSettings?.pfp || "/images/icon-user.png"
+          pfp: userSettings?.pfp || "/images/icon-user.png",
+          online: isOnline(r.id)   // ✅ add online flag
         };
       });
 
@@ -565,8 +618,9 @@ app.get("/friends/list", requireAuth, (req, res) => {
   );
 });
 
-
-
+app.get('/online-users', (req, res) => {
+  res.json({ online: getOnlineUsers() });
+});
 
 // --- SIGNUP / LOGIN / LOGOUT ---
 const lastRegistrationByIP = {};
@@ -694,6 +748,7 @@ app.post('/login', authLimiter, async (req, res) => {
 
     // ✅ Save into session
     req.session.user = decodedUser;
+    userOnline(decodedUser.id);  // ✅ place it here
 
     // (Optional) also set token cookie if you need JWT
     const token = generateToken(decodedUser);
@@ -710,8 +765,20 @@ app.post('/login', authLimiter, async (req, res) => {
 
 
 app.post('/logout', (req, res) => {
-  res.clearCookie('token');
-  res.redirect('/');
+  if (req.session.user) {
+    userOffline(req.session.user.id);  // mark as offline
+  }
+
+  req.session.destroy(err => {
+    if (err) {
+      console.error("Failed to destroy session:", err);
+      return res.status(500).send("Logout failed");
+    }
+
+    res.clearCookie('token');
+    res.clearCookie('connect.sid'); // clear session cookie too
+    res.redirect('/');
+  });
 });
 
 app.use((req, res) => {

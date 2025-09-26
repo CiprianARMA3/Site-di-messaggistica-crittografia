@@ -651,66 +651,6 @@ body.night .search:hover i {
   color: #1e90ff;
 }
 
-/* ---------------- CHAT MESSAGE SEARCH ---------------- */
-.chat-search {
-  visibility: hidden;
-  opacity: 0;
-  transform: translateY(-8px);
-  background: #ffffff;
-  padding: 10px 14px;
-  margin: 10px 18px;
-  border-radius: 25px;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-  transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
-}
-.chat-search input {
-    border-radius: 20px;
-}
-
-.chat-search.show {
-  visibility: visible;
-  opacity: 1;
-  transform: translateY(0);
-}
-
-.chat-search input {
-  border: none;
-  background: transparent;
-  width: 100%;
-  outline: none;
-  font-size: 15px;
-  color: #333;
-  padding: 6px;
-}
-
-/* remove the hover/focus overlay effect */
-.chat-search:hover,
-.chat-search input:focus {
-  background: #ffffff;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
-}
-
-/* ---- Night mode ---- */
-body.night .chat-search {
-  background: #2e2e2e;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
-}
-
-body.night .chat-search.show {
-  visibility: visible;
-  opacity: 1;
-  transform: translateY(0);
-}
-
-body.night .chat-search:hover,
-body.night .chat-search input:focus {
-  background: #2e2e2e; /* no overlay */
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
-}
-
-body.night .chat-search input {
-  color: #fff;
-}
 
 
 
@@ -1273,4 +1213,102 @@ body.night .settings-header {
 /* Success (green) */
 .notification.success {
   background: #28a745;
+}
+
+.chat-search {
+  display: none;   /* ⬅️ this hides it until toggled */
+  align-items: center;
+  background: #f0f0f0;
+  padding: 10px 14px;
+  margin: 10px;
+  border-radius: 25px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+}
+
+/* When active (JS adds .active) */
+.chat-search.active {
+  display: flex;
+  opacity: 1;
+  animation: fadeInSearch 0.6s forwards;
+}
+
+.chat-search i {
+  margin-right: 10px;
+  font-size: 18px;
+  color: #888;
+  transition: color 0.3s;
+}
+
+.chat-search input {
+  border: none;
+  background: transparent;
+  width: 100%;
+  outline: none;
+  font-size: 15px;
+  padding: 6px;
+  transition: all 0.3s ease;
+    outline: none;               /* remove square glow */
+  border: none;
+  box-shadow: none;       
+}
+
+/* Hover / Focus effect */
+.chat-search:hover {
+  background: #e8e8e8;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.chat-search input:focus {
+  padding-left: 4px;
+  color: #333;
+}
+
+.chat-search input:focus + i,
+.chat-search:hover i {
+  color: #1e90ff;
+}
+
+/* Fade in animation */
+@keyframes fadeInSearch {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------------- NIGHT MODE ---------------- */
+body.night .chat-search {
+  background: #2b2b2b;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
+}
+
+body.night .chat-search:hover {
+  background: #222;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+body.night .chat-search i {
+  color: #aaa;
+}
+
+body.night .chat-search input {
+  color: #fff;
+}
+
+body.night .chat-search input:focus + i,
+body.night .chat-search:hover i {
+  color: #1e90ff;
+}
+
+.chat-search input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.chat-search input:focus-visible {
+  outline: none !important;
+}
+
+.chat-search input::-webkit-input-placeholder {
+  color: #aaa; /* keep placeholder looking nice */
 }

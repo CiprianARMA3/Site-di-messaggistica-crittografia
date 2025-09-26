@@ -1,148 +1,144 @@
 // chatDB.js
 const path = require("path");
+const fs = require("fs");
 const { Low } = require("lowdb");
 const { JSONFile } = require("lowdb/node");
 const { encryptMessage, decryptMessage } = require("./cryptoHelper");
+const crypto = require("crypto");
 
-// Path to chats.json
-const file = path.join(__dirname, "database/chats.json");
-const adapter = new JSONFile(file);
+// --- Directories ---
+const baseDir = path.join(__dirname, "database/user-chats");
+if (!fs.existsSync(baseDir)) fs.mkdirSync(baseDir, { recursive: true });
 
-// ✅ Default structure includes chats, friends, and requests
-const db = new Low(adapter, { chats: {}, friends: {}, requests: {} });
+const friendsFile = path.join(__dirname, "database/friends.json");
+const friendsAdapter = new JSONFile(friendsFile);
+const friendsDb = new Low(friendsAdapter, { friends: {}, requests: {} });
 
-// Initialize DB
-async function init() {
+// --- Helpers ---
+function encryptChatId(userId, friendId) {
+  const raw = [userId, friendId].sort().join("_");
+  return crypto.createHash("sha256").update(raw).digest("hex");
+}
+
+function getBucketDate(timestamp = Date.now()) {
+  const d = new Date(timestamp);
+  const day = Math.floor((d.getDate() - 1) / 15) * 15 + 1; // 1 or 16
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+async function loadChatDb(userId, friendId, timestamp) {
+  const chatIdEnc = encryptChatId(userId, friendId);
+  const chatDir = path.join(baseDir, chatIdEnc);
+  if (!fs.existsSync(chatDir)) fs.mkdirSync(chatDir, { recursive: true });
+
+  const bucket = getBucketDate(timestamp);
+  const file = path.join(chatDir, `${bucket}.json`);
+  const adapter = new JSONFile(file);
+  const db = new Low(adapter, { messages: [] });
   await db.read();
-  db.data ||= { chats: {}, friends: {}, requests: {} };
-  await db.write();
-}
-init();
-
-/**
- * Utility: generate a stable chatId between two users
- */
-function getChatId(userId, friendId) {
-  return [userId, friendId].sort().join("_");
+  db.data ||= { messages: [] };
+  return db;
 }
 
-/**
- * Get all messages for a chat (decrypted automatically).
- */
+// --- Messages ---
 async function getMessages(userId, friendId) {
-  await db.read();
-  const chatId = getChatId(userId, friendId);
-  const rawMsgs = db.data.chats[chatId] || [];
+  const chatIdEnc = encryptChatId(userId, friendId);
+  const chatDir = path.join(baseDir, chatIdEnc);
+  if (!fs.existsSync(chatDir)) return [];
 
-  return rawMsgs.map(m => {
+  const files = fs.readdirSync(chatDir).filter(f => f.endsWith(".json"));
+  let all = [];
+
+  for (const file of files) {
+    const adapter = new JSONFile(path.join(chatDir, file));
+    const db = new Low(adapter, { messages: [] });
+    await db.read();
+    all.push(...db.data.messages);
+  }
+
+  return all.map(m => {
     if (m.type === "text") {
       try {
         return { ...m, content: decryptMessage(m.content) };
-      } catch (e) {
-        console.error("Decryption failed:", e.message);
+      } catch {
         return { ...m, content: "[Decryption failed]" };
       }
     }
     return m;
-  });
+  }).sort((a, b) => a.timestamp - b.timestamp);
 }
 
-/**
- * Add a message (encrypt text automatically).
- */
 async function addMessage(userId, friendId, message) {
-  await db.read();
-  const chatId = getChatId(userId, friendId);
-  if (!db.data.chats[chatId]) db.data.chats[chatId] = [];
-
+  const db = await loadChatDb(userId, friendId, message.timestamp || Date.now());
   const msgToStore = { ...message };
 
   if (msgToStore.type === "text") {
     msgToStore.content = encryptMessage(msgToStore.content);
   }
 
-  db.data.chats[chatId].push(msgToStore);
+  db.data.messages.push(msgToStore);
   await db.write();
 }
 
-/**
- * Get friends of a user
- */
+// --- Friends ---
 async function getFriends(userId) {
-  await db.read();
-  db.data.friends ||= {};
-  return db.data.friends[userId] || [];
+  await friendsDb.read();
+  friendsDb.data ||= { friends: {}, requests: {} };
+  return friendsDb.data.friends[userId] || [];
 }
 
-/**
- * Add a friend relationship
- */
 async function addFriend(userId, friendId) {
-  await db.read();
-  db.data.friends ||= {};
+  await friendsDb.read();
+  friendsDb.data ||= { friends: {}, requests: {} };
 
-  if (!db.data.friends[userId]) {
-    db.data.friends[userId] = [];
-  }
-  if (!db.data.friends[userId].includes(friendId)) {
-    db.data.friends[userId].push(friendId);
-  }
+  if (!friendsDb.data.friends[userId]) friendsDb.data.friends[userId] = [];
+  if (!friendsDb.data.friends[friendId]) friendsDb.data.friends[friendId] = [];
 
-  // also add reverse relation
-  if (!db.data.friends[friendId]) {
-    db.data.friends[friendId] = [];
+  if (!friendsDb.data.friends[userId].includes(friendId)) {
+    friendsDb.data.friends[userId].push(friendId);
   }
-  if (!db.data.friends[friendId].includes(userId)) {
-    db.data.friends[friendId].push(userId);
+  if (!friendsDb.data.friends[friendId].includes(userId)) {
+    friendsDb.data.friends[friendId].push(userId);
   }
 
-  await db.write();
+  await friendsDb.write();
 }
 
-/**
- * Get pending friend requests for a user
- */
+// --- Friend Requests ---
 async function getRequests(userId) {
-  await db.read();
-  db.data.requests ||= {};
-  return db.data.requests[userId] || [];
+  await friendsDb.read();
+  friendsDb.data ||= { friends: {}, requests: {} };
+  return friendsDb.data.requests[userId] || [];
 }
 
-/**
- * Add a friend request
- */
 async function addRequest(fromUser, toUser) {
-  await db.read();
-  db.data.requests ||= {};
+  await friendsDb.read();
+  friendsDb.data ||= { friends: {}, requests: {} };
 
-  if (!db.data.requests[toUser]) {
-    db.data.requests[toUser] = [];
+  if (!friendsDb.data.requests[toUser]) {
+    friendsDb.data.requests[toUser] = [];
   }
 
-  if (!db.data.requests[toUser].includes(fromUser)) {
-    db.data.requests[toUser].push(fromUser);
-    await db.write();
+  if (!friendsDb.data.requests[toUser].includes(fromUser)) {
+    friendsDb.data.requests[toUser].push(fromUser);
   }
+
+  await friendsDb.write();
 }
 
-/**
- * Accept a friend request
- */
 async function acceptRequest(userId, fromUser) {
-  await db.read();
-  db.data.requests ||= {};
+  await friendsDb.read();
+  friendsDb.data ||= { friends: {}, requests: {} };
 
-  // remove from requests
-  if (db.data.requests[userId]) {
-    db.data.requests[userId] = db.data.requests[userId].filter(u => u !== fromUser);
+  if (friendsDb.data.requests[userId]) {
+    friendsDb.data.requests[userId] = friendsDb.data.requests[userId].filter(u => u !== fromUser);
   }
 
-  // add to friends
   await addFriend(userId, fromUser);
-
-  await db.write();
+  await friendsDb.write();
 }
 
+// --- Export ---
 module.exports = {
   getMessages,
   addMessage,
