@@ -237,41 +237,41 @@ app.post("/settings/username", requireAuth, (req, res) => {
 
 
 // Separate chat route
-app.post("/chat/:friendId", requireAuth, async (req, res) => {
-  try {
-    const friendId = req.params.friendId;
-    const { content, type } = req.body;
+// app.post("/chat/:friendId", requireAuth, async (req, res) => {
+//   try {
+//     const friendId = req.params.friendId;
+//     const { content, type } = req.body;
 
-    if (!content || !type) {
-      return res.status(400).json({ error: "Invalid message format" });
-    }
+//     if (!content || !type) {
+//       return res.status(400).json({ error: "Invalid message format" });
+//     }
 
-    const message = {
-      senderId: req.session.user.id,
-      content,
-      type, // "text" | "image" | ...
-      timestamp: Date.now()
-    };
+//     const message = {
+//       senderId: req.session.user.id,
+//       content,
+//       type, // "text" | "image" | ...
+//       timestamp: Date.now()
+//     };
 
-    await addMessage(req.session.user.id, friendId, message);
+//     await addMessage(req.session.user.id, friendId, message);
 
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Error sending message:", err);
-    res.status(500).json({ error: "Failed to send message" });
-  }
-  const sockets = userSockets.get(String(friendId));
-    if (sockets) {
-      for (const sid of sockets) {
-        io.to(sid).emit("new_message", {
-          from: senderId,
-          content,
-          type,
-          time: new Date().toLocaleTimeString()
-        });
-      }
-    }
-});
+//     res.json({ success: true });
+//   } catch (err) {
+//     console.error("Error sending message:", err);
+//     res.status(500).json({ error: "Failed to send message" });
+//   }
+//   const sockets = userSockets.get(String(friendId));
+//     if (sockets) {
+//       for (const sid of sockets) {
+//         io.to(sid).emit("new_message", {
+//           from: senderId,
+//           content,
+//           type,
+//           time: new Date().toLocaleTimeString()
+//         });
+//       }
+//     }
+// });
 
 // ---------------- Change password ----------------
 const passwordChangeLog = {};
@@ -430,6 +430,19 @@ app.post("/chat/:friendId", requireAuth, async (req, res) => {
     };
 
     await chatDB.addMessage(senderId, friendId, message);
+
+    // ✅ Broadcast message to recipient if online
+    const sockets = userSockets.get(String(friendId));
+    if (sockets) {
+      for (const sid of sockets) {
+        io.to(sid).emit("new_message", {
+          from: senderId,
+          content,
+          type,
+          time: new Date().toLocaleTimeString()
+        });
+      }
+    }
 
     res.json({ success: true });
   } catch (err) {
@@ -819,6 +832,7 @@ const io = new Server(server, {
 const activeSockets = new Map();
 // Instead of one socket per user, allow multiple sockets
 const userSockets = new Map();
+const disconnectTimers = new Map();
 
 io.on("connection", (socket) => {
   console.log("🔌 New socket connected:", socket.id);
@@ -828,13 +842,14 @@ io.on("connection", (socket) => {
     const uid = String(userId);
     socket.data.userId = uid;
 
-    // Track total active tabs
+    // cancel pending offline if reconnects quickly
+    if (disconnectTimers.has(uid)) {
+      clearTimeout(disconnectTimers.get(uid));
+      disconnectTimers.delete(uid);
+    }
+
     const count = activeSockets.get(uid) || 0;
     activeSockets.set(uid, count + 1);
-
-    // Track socket IDs for this user
-    if (!userSockets.has(uid)) userSockets.set(uid, new Set());
-    userSockets.get(uid).add(socket.id);
 
     if (count === 0) {
       userOnline(uid);
@@ -850,20 +865,17 @@ io.on("connection", (socket) => {
     if (!uid) return;
 
     const count = activeSockets.get(uid) || 0;
-
-    // Remove this socket id from userSockets
-    if (userSockets.has(uid)) {
-      userSockets.get(uid).delete(socket.id);
-      if (userSockets.get(uid).size === 0) {
-        userSockets.delete(uid);
-      }
-    }
-
     if (count <= 1) {
       activeSockets.delete(uid);
-      userOffline(uid);
-      io.emit("user_offline", uid);
-      console.log(`❌ User ${uid} is now OFFLINE`);
+
+      // delay marking offline (e.g., 2 seconds)
+      disconnectTimers.set(uid, setTimeout(() => {
+        userOffline(uid);
+        io.emit("user_offline", uid);
+        disconnectTimers.delete(uid);
+        console.log(`❌ User ${uid} is now OFFLINE`);
+      }, 2000));
+
     } else {
       activeSockets.set(uid, count - 1);
       console.log(`User ${uid} closed a tab (remaining: ${count - 1})`);

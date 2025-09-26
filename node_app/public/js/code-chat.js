@@ -175,72 +175,82 @@ if (modalSubmit) {
 
   // ---------- Friend list (sidebar) ----------
   async function loadFriends() {
-    try {
-      const res = await fetch("/friends/list");
-      const data = await res.json();
-      const chatList = document.querySelector(".chat-list");
-      if (!chatList) return;
-      const buttons = chatList.querySelector(".chat-buttons"); // keep buttons
-      const fresh = Array.isArray(data.friends) ? data.friends : [];
-        lastFriends = fresh.map(f => {
-          return { ...f, online: f.online }; // trust backend for initial state
-        });
-      // render fresh
-      chatList.innerHTML = "";
-      lastFriends.forEach((f, i) => {
-        const div = document.createElement("div");
-        div.className = "chat";
-        div.setAttribute("data-friend-id", String(f.id));
-        const onlineClass = f.online ? "online" : "offline";
-        div.innerHTML = `
-          <img src="${f.pfp}" alt="Contact" class="user-img">
-          <div class="chat-info">
-            <h4 class="name-user ${onlineClass}">${f.username}</h4>
-            <p class="last-message">${f.lastMessage || "ultimo messaggio placeholder"}</p>
-          </div>
-          <span class="time">${f.lastActive || ""}</span>
-        `;
-        // click activates the chat
-        div.addEventListener("click", () => {
-          activateFriendChat(f, i);
-          // visual selection
-          document.querySelectorAll(".chat-list .chat").forEach(el => el.classList.remove("active"));
-          div.classList.add("active");
-        });
-        chatList.appendChild(div);
+  try {
+    const res = await fetch("/friends/list");
+    const data = await res.json();
+    const chatList = document.querySelector(".chat-list");
+    if (!chatList) return;
+    const buttons = chatList.querySelector(".chat-buttons"); // keep buttons
+    const fresh = Array.isArray(data.friends) ? data.friends : [];
+
+    // ✅ preserve socket-updated online status if available
+    lastFriends = fresh.map(f => {
+      const cached = lastFriends.find(old => String(old.id) === String(f.id));
+      return {
+        ...f,
+        online: cached ? cached.online : f.online, // trust cache if sockets updated it
+      };
+    });
+
+    // render fresh
+    chatList.innerHTML = "";
+    lastFriends.forEach((f, i) => {
+      const div = document.createElement("div");
+      div.className = "chat";
+      div.setAttribute("data-friend-id", String(f.id));
+      const onlineClass = f.online ? "online" : "offline";
+      div.innerHTML = `
+        <img src="${f.pfp}" alt="Contact" class="user-img">
+        <div class="chat-info">
+          <h4 class="name-user ${onlineClass}">${f.username}</h4>
+          <p class="last-message">${f.lastMessage || "ultimo messaggio placeholder"}</p>
+        </div>
+        <span class="time">${f.lastActive || ""}</span>
+      `;
+      // click activates the chat
+      div.addEventListener("click", () => {
+        activateFriendChat(f, i);
+        // visual selection
+        document.querySelectorAll(".chat-list .chat").forEach(el => el.classList.remove("active"));
+        div.classList.add("active");
       });
+      chatList.appendChild(div);
+    });
 
-      if (buttons) chatList.appendChild(buttons);
+    if (buttons) chatList.appendChild(buttons);
 
-      // Auto-activate friend:
-      const currentFriendId = document.body.dataset.friendId;
-      if (currentFriendId) {
-        // try to find friend in list and activate it
-        const idx = lastFriends.findIndex(ff => String(ff.id) === String(currentFriendId));
-        if (idx !== -1) {
-          activateFriendChat(lastFriends[idx], idx);
-          const el = document.querySelector(`.chat-list .chat[data-friend-id="${currentFriendId}"]`);
-          if (el) { document.querySelectorAll(".chat-list .chat").forEach(e => e.classList.remove("active")); el.classList.add("active"); }
-          return;
-        }
-      }
-
-      if (lastFriends.length > 0) {
-        // no friend selected -> activate first friend
-        activateFriendChat(lastFriends[0], 0);
-        const firstEl = chatList.querySelector(".chat");
-        if (firstEl) {
+    // Auto-activate friend:
+    const currentFriendId = document.body.dataset.friendId;
+    if (currentFriendId) {
+      const idx = lastFriends.findIndex(ff => String(ff.id) === String(currentFriendId));
+      if (idx !== -1) {
+        activateFriendChat(lastFriends[idx], idx);
+        const el = document.querySelector(`.chat-list .chat[data-friend-id="${currentFriendId}"]`);
+        if (el) {
           document.querySelectorAll(".chat-list .chat").forEach(e => e.classList.remove("active"));
-          firstEl.classList.add("active");
+          el.classList.add("active");
         }
-      } else {
-        // clear chat view when no friends
-        if (chatView) chatView.innerHTML = `<p class="empty">Select a user to chat with</p>`;
+        return;
       }
-    } catch (err) {
-      console.error("loadFriends error", err);
     }
+
+    if (lastFriends.length > 0) {
+      // no friend selected -> activate first friend
+      activateFriendChat(lastFriends[0], 0);
+      const firstEl = chatList.querySelector(".chat");
+      if (firstEl) {
+        document.querySelectorAll(".chat-list .chat").forEach(e => e.classList.remove("active"));
+        firstEl.classList.add("active");
+      }
+    } else {
+      // clear chat view when no friends
+      if (chatView) chatView.innerHTML = `<p class="empty">Select a user to chat with</p>`;
+    }
+  } catch (err) {
+    console.error("loadFriends error", err);
   }
+}
+
 
   // ---------- Sidebar search (friend list) ----------
   function filterFriendList(query) {
@@ -332,6 +342,22 @@ function highlightMessages(query) {
 
     // ---------- Socket.io presence ----------
     const socket = io();
+    
+    socket.on("new_message", msg => {
+  console.log("💬 New message:", msg);
+
+  // Only display if the chat with this friend is currently open
+  if (currentFriendId && Number(currentFriendId) === Number(msg.from)) {
+    const msgDiv = document.createElement("div");
+    msgDiv.classList.add("msg", "friend");
+    msgDiv.textContent = `${msg.content} (${msg.time})`;
+    chatView.appendChild(msgDiv);
+    chatView.scrollTop = chatView.scrollHeight;
+  } else {
+    // Optionally show a notification or highlight the friend in the sidebar
+    console.log("📩 Message received from another friend:", msg.from);
+  }
+});
 
   socket.on("connect", () => {
     if (userId) socket.emit("auth", { userId });
