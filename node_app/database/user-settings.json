@@ -81,7 +81,16 @@
     "username": "sadasd@asasas.it",
     "pfp": "/images/icon-user.png",
     "pfpChanges": [],
-    "lastUsernameChange": 0
+    "lastUsernameChange": 0,
+    "friends": [],
+    "requests": [
+      {
+        "fromId": 5,
+        "fromUsername": "ciprian001",
+        "fromPfp": "/user-images/68f91520550f31675bc1f0f5.jpg",
+        "date": 1758892306754
+      }
+    ]
   },
   "8": {
     "username": "CiprianAdmin",

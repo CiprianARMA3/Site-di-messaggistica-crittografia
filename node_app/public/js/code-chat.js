@@ -64,7 +64,42 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.target === modal) modal.style.display = "none";
     if (e.target === requestsModal) requestsModal.style.display = "none";
   });
+  
+if (modalSubmit) {
+  modalSubmit.addEventListener("click", async () => {
+    const action = modalTitle.textContent;
+    const value = modalInput.value.trim();
+    if (!value) return;
 
+    if (action === "Add Friend") {
+      try {
+        const res = await fetch("/friends/request", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(csrfToken ? { "CSRF-Token": csrfToken } : {})
+          },
+          body: JSON.stringify({ friendId: value })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showNotification("✅ Friend request sent!");
+          modal.style.display = "none";
+        } else {
+          showNotification("⚠️ " + (data.error || "Failed to send"), "error");
+        }
+      } catch (err) {
+        console.error("Add friend error:", err);
+      }
+    }
+
+    if (action === "Join Group") {
+      // TODO: implement group join logic
+      console.log("Joining group with code:", value);
+      modal.style.display = "none";
+    }
+  });
+}
   // ---------- Friend Requests API ----------
   async function loadRequests() {
     if (!requestsModal) return;
