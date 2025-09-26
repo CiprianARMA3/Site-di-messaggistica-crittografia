@@ -181,18 +181,21 @@ if (modalSubmit) {
       const chatList = document.querySelector(".chat-list");
       if (!chatList) return;
       const buttons = chatList.querySelector(".chat-buttons"); // keep buttons
-      lastFriends = Array.isArray(data.friends) ? data.friends : [];
-
+      const fresh = Array.isArray(data.friends) ? data.friends : [];
+        lastFriends = fresh.map(f => {
+          return { ...f, online: f.online }; // trust backend for initial state
+        });
       // render fresh
       chatList.innerHTML = "";
       lastFriends.forEach((f, i) => {
         const div = document.createElement("div");
         div.className = "chat";
         div.setAttribute("data-friend-id", String(f.id));
+        const onlineClass = f.online ? "online" : "offline";
         div.innerHTML = `
           <img src="${f.pfp}" alt="Contact" class="user-img">
           <div class="chat-info">
-            <h4 class="name-user">${f.username}</h4>
+            <h4 class="name-user ${onlineClass}">${f.username}</h4>
             <p class="last-message">${f.lastMessage || "ultimo messaggio placeholder"}</p>
           </div>
           <span class="time">${f.lastActive || ""}</span>
@@ -327,6 +330,65 @@ function highlightMessages(query) {
   const sendBtn = document.querySelector(".chat-footer .send-btn");
   const userId = Number(document.body.dataset.userId || 0);
 
+    // ---------- Socket.io presence ----------
+    const socket = io();
+
+  socket.on("connect", () => {
+    if (userId) socket.emit("auth", { userId });
+  });
+
+  socket.on("user_online", (id) => {
+    updateFriendStatus(id, true);
+  });
+
+  socket.on("new_message", (msg) => {
+  const currentFriendId = document.body.dataset.friendId;
+  if (String(msg.from) === String(currentFriendId)) {
+    appendMessage({
+      senderId: msg.from,
+      content: msg.content,
+      type: msg.type,
+      time: msg.time
+    });
+    if (chatView) chatView.scrollTop = chatView.scrollHeight;
+  } else {
+    // optional: show a sidebar "new message" indicator
+    const chatEl = document.querySelector(`.chat-list .chat[data-friend-id="${msg.from}"]`);
+    if (chatEl) chatEl.classList.add("unread");
+  }
+});
+
+  socket.on("user_offline", (id) => {
+    updateFriendStatus(id, false);
+  });
+
+function updateFriendStatus(friendId, online) {
+  // keep cache in sync
+  const idx = lastFriends.findIndex(f => String(f.id) === String(friendId));
+  if (idx !== -1) {
+    lastFriends[idx].online = online;
+  }
+
+  // Sidebar
+  const el = document.querySelector(`.chat-list .chat[data-friend-id="${friendId}"]`);
+  if (el) {
+    const nameEl = el.querySelector(".name-user");
+    if (nameEl) {
+      nameEl.classList.toggle("online", online);
+      nameEl.classList.toggle("offline", !online);
+    }
+  }
+
+  // Header
+  if (String(document.body.dataset.friendId) === String(friendId)) {
+    if (chatHeaderStatus) {
+      chatHeaderStatus.textContent = online ? "online" : "offline";
+      chatHeaderStatus.classList.toggle("online", online);
+      chatHeaderStatus.classList.toggle("offline", !online);
+    }
+  }
+}
+
   async function loadMessages() {
     const friendId = document.body.dataset.friendId;
     if (!friendId) return;
@@ -379,29 +441,29 @@ function highlightMessages(query) {
   if (messageInput) messageInput.addEventListener("keypress", e => { if (e.key === "Enter") sendMessage(); });
 
   // ---------- Status updater ----------
-  let statusUpdaterId = null;
-  function startStatusUpdater(friendId) {
-    if (statusUpdaterId) clearInterval(statusUpdaterId);
-    const headerStatus = chatHeaderStatus;
-    statusUpdaterId = setInterval(async () => {
-      try {
-        const res = await fetch(`/friends/status/${friendId}`);
-        const data = await res.json();
-        if (!headerStatus) return;
-        if (data.online) {
-          headerStatus.textContent = "online";
-          headerStatus.classList.remove("offline");
-          headerStatus.classList.add("online");
-        } else {
-          headerStatus.textContent = "offline";
-          headerStatus.classList.remove("online");
-          headerStatus.classList.add("offline");
-        }
-      } catch (err) {
-        console.error("status update error", err);
-      }
-    }, 5000);
-  }
+  // let statusUpdaterId = null;
+  // function startStatusUpdater(friendId) {
+  //   if (statusUpdaterId) clearInterval(statusUpdaterId);
+  //   const headerStatus = chatHeaderStatus;
+  //   statusUpdaterId = setInterval(async () => {
+  //     try {
+  //       const res = await fetch(`/friends/status/${friendId}`);
+  //       const data = await res.json();
+  //       if (!headerStatus) return;
+  //       if (data.online) {
+  //         headerStatus.textContent = "online";
+  //         headerStatus.classList.remove("offline");
+  //         headerStatus.classList.add("online");
+  //       } else {
+  //         headerStatus.textContent = "offline";
+  //         headerStatus.classList.remove("online");
+  //         headerStatus.classList.add("offline");
+  //       }
+  //     } catch (err) {
+  //       console.error("status update error", err);
+  //     }
+  //   }, 5000);
+  // }
 
   // ---------- Activate friend chat ----------
   function activateFriendChat(friend, idx = 0) {
@@ -421,17 +483,19 @@ function highlightMessages(query) {
         chatHeaderStatus.classList.add("offline");
       }
     }
-    startStatusUpdater(friend.id);
+    // startStatusUpdater(friend.id);
     if (chatView) chatView.innerHTML = "";
     loadMessages();
   }
 
   // ---------- Init ----------
-  (async function init() {
-    updateRequestCounter();
-    await loadFriends();
-    // keep messages fresh
-    setInterval(loadMessages, 3000);
-  })();
+(async function init() {
+  updateRequestCounter();
+  await loadFriends();
+  // keep messages fresh
+  setInterval(loadMessages, 3000);
+
+  // keep sidebar presence fresh (in case socket missed something)
+})();
 
 });

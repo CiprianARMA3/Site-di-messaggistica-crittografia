@@ -1312,3 +1312,18 @@ body.night .chat-search:hover i {
 .chat-search input::-webkit-input-placeholder {
   color: #aaa; /* keep placeholder looking nice */
 }
+
+.name-user.online { color: #34c759; }   /* green */
+.name-user.offline { color: #9aa0a6; } /* gray */
+.name-user.online::after,
+.name-user.offline::after {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-left: 6px;
+}
+
+.name-user.online::after { background: #34c759; }
+.name-user.offline::after { background: #9aa0a6; }

@@ -45,8 +45,8 @@
             <div class="chat">
               <img src="<%= f.pfp %>" alt="Contact" id="user-img">
               <div class="chat-info">
-                <h4 class="name-user"><%= f.username %></h4>
-                <p class="last-message"><%= f.lastMessage || "ultimo messaggio placeholder" %></p>
+              <h4 class="name-user ${onlineClass}">${f.username}</h4>
+                <p class="last-message">${f.lastMessage || "ultimo messaggio placeholder"}</p>
               </div>
               <span class="time"><%= f.lastActive || "" %></span>
             </div>
@@ -169,7 +169,16 @@
       </div>
     </div>
   </div>
-
+  <script src="/socket.io/socket.io.js"></script>
   <script src="/js/code-chat.js"></script>
+<script>
+  const socket = io();
+
+  socket.on("connect", () => {
+    if (window.__CURRENT_USER_ID__) {
+      socket.emit("auth", { userId: window.__CURRENT_USER_ID__ });
+    }
+  });
+</script>
 </body>
 </html>

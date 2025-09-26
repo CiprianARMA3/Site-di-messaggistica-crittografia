@@ -30,6 +30,12 @@
         "fromUsername": "ciprian001",
         "fromPfp": "/user-images/68f91520550f31675bc1f0f5.jpg",
         "date": 1758828483925
+      },
+      {
+        "fromId": 9,
+        "fromUsername": "ciprian1010",
+        "fromPfp": "/images/icon-user.png",
+        "date": 1758914702914
       }
     ]
   },

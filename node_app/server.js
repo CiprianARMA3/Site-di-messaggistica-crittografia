@@ -17,7 +17,8 @@ const chatDB = require("./chatDB");
 const { getMessages, addMessage, getFriends, getRequests } = chatDB;
 const { db } = require("./db");
 const { userOnline, userOffline, getOnlineUsers, isOnline } = require("./onlineUsers");
-
+const http = require("http");
+const { Server } = require("socket.io");
 
 const {
   getSettings,
@@ -259,6 +260,17 @@ app.post("/chat/:friendId", requireAuth, async (req, res) => {
     console.error("Error sending message:", err);
     res.status(500).json({ error: "Failed to send message" });
   }
+  const sockets = userSockets.get(String(friendId));
+    if (sockets) {
+      for (const sid of sockets) {
+        io.to(sid).emit("new_message", {
+          from: senderId,
+          content,
+          type,
+          time: new Date().toLocaleTimeString()
+        });
+      }
+    }
 });
 
 // ---------------- Change password ----------------
@@ -585,37 +597,47 @@ app.post("/friends/decline", requireAuth, (req, res) => {
   res.json({ success: true });
 });
 
+
 app.get("/friends/list", requireAuth, (req, res) => {
-  const settings = ensureSettings(req.session.user.id);
-  const friendsRaw = Array.isArray(settings.friends) ? settings.friends : [];
-  const friendIds = friendsRaw.map(f => f.id);
+  try {
+    const settings = ensureSettings(req.session.user.id);
+    const friendsRaw = Array.isArray(settings.friends) ? settings.friends : [];
+    const friendIds = friendsRaw.map(f => f.id);
 
-  if (friendIds.length === 0) {
-    return res.json({ friends: [] });
-  }
-
-  const placeholders = friendIds.map(() => "?").join(",");
-  db.all(
-    `SELECT id, username FROM database_utenti WHERE id IN (${placeholders})`,
-    friendIds,
-    (err, rows) => {
-      if (err) return res.status(500).json({ error: "Server error" });
-
-      const friends = rows.map(r => {
-        const userSettings = getSettings(r.id);
-        const viewedName = userSettings?.username || decrypt(r.username) || "Unknown";
-
-        return {
-          id: r.id,
-          username: viewedName,
-          pfp: userSettings?.pfp || "/images/icon-user.png",
-          online: isOnline(r.id)   // ✅ add online flag
-        };
-      });
-
-      res.json({ friends });
+    if (friendIds.length === 0) {
+      return res.json({ friends: [] });
     }
-  );
+
+    const placeholders = friendIds.map(() => "?").join(",");
+    db.all(
+      `SELECT id, username FROM database_utenti WHERE id IN (${placeholders})`,
+      friendIds,
+      (err, rows) => {
+        if (err) {
+          console.error("DB error in /friends/list:", err);
+          return res.status(500).json({ error: "Server error" });
+        }
+
+        const friends = rows.map(r => {
+          const userSettings = getSettings(r.id);
+          const viewedName =
+            userSettings?.username || decrypt(r.username) || "Unknown";
+
+          return {
+            id: r.id,
+            username: viewedName,
+            pfp: userSettings?.pfp || "/images/icon-user.png",
+            online: isOnline(r.id), // ✅ add online flag from memory
+          };
+        });
+
+        res.json({ friends });
+      }
+    );
+  } catch (e) {
+    console.error("Unexpected error in /friends/list:", e);
+    res.status(500).json({ error: "Unexpected server error" });
+  }
 });
 
 app.get('/online-users', (req, res) => {
@@ -748,7 +770,7 @@ app.post('/login', authLimiter, async (req, res) => {
 
     // ✅ Save into session
     req.session.user = decodedUser;
-    userOnline(decodedUser.id);  // ✅ place it here
+    // userOnline(decodedUser.id);  // ✅ place it here
 
     // (Optional) also set token cookie if you need JWT
     const token = generateToken(decodedUser);
@@ -766,7 +788,7 @@ app.post('/login', authLimiter, async (req, res) => {
 
 app.post('/logout', (req, res) => {
   if (req.session.user) {
-    userOffline(req.session.user.id);  // mark as offline
+    // userOffline(req.session.user.id);  // mark as offline
   }
 
   req.session.destroy(err => {
@@ -785,7 +807,70 @@ app.use((req, res) => {
   res.status(404).render('404', { csrfToken: res.locals.csrfToken });
 });
 
-// --- Start server ---
-app.listen(PORT, () => {
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: true,  // later restrict to your frontend domain
+    methods: ["GET", "POST"]
+  }
+});
+
+// Socket.IO presence handling
+const activeSockets = new Map();
+// Instead of one socket per user, allow multiple sockets
+const userSockets = new Map();
+
+io.on("connection", (socket) => {
+  console.log("🔌 New socket connected:", socket.id);
+
+  socket.on("auth", ({ userId }) => {
+    if (!userId) return;
+    const uid = String(userId);
+    socket.data.userId = uid;
+
+    // Track total active tabs
+    const count = activeSockets.get(uid) || 0;
+    activeSockets.set(uid, count + 1);
+
+    // Track socket IDs for this user
+    if (!userSockets.has(uid)) userSockets.set(uid, new Set());
+    userSockets.get(uid).add(socket.id);
+
+    if (count === 0) {
+      userOnline(uid);
+      io.emit("user_online", uid);
+      console.log(`✅ User ${uid} is now ONLINE`);
+    } else {
+      console.log(`User ${uid} opened another tab (total: ${count + 1})`);
+    }
+  });
+
+  socket.on("disconnect", () => {
+    const uid = socket.data.userId;
+    if (!uid) return;
+
+    const count = activeSockets.get(uid) || 0;
+
+    // Remove this socket id from userSockets
+    if (userSockets.has(uid)) {
+      userSockets.get(uid).delete(socket.id);
+      if (userSockets.get(uid).size === 0) {
+        userSockets.delete(uid);
+      }
+    }
+
+    if (count <= 1) {
+      activeSockets.delete(uid);
+      userOffline(uid);
+      io.emit("user_offline", uid);
+      console.log(`❌ User ${uid} is now OFFLINE`);
+    } else {
+      activeSockets.set(uid, count - 1);
+      console.log(`User ${uid} closed a tab (remaining: ${count - 1})`);
+    }
+  });
+});
+
+server.listen(PORT, () => {
   console.log(`✅ Server running at http://localhost:${PORT}`);
 });
