@@ -28,7 +28,7 @@ Aggiunti commenti con l'intelligenza artificiale per una migliore lettura del co
 Il funzionamento è il seguente: creata la chat, il nome viene encriptato, i messaggi vengono salvati a partire dal giorno 0 al 15 per poi essere eliminati (funzione ancora da integrare che però metterò nel prossimo progetto) , e i messaggi vengono encriptati nel seguente modo:
 
 <img width="1920" height="1080" alt="funzionamento-encrypt" src="https://github.com/user-attachments/assets/3dabd902-7c70-417d-8171-d716904bde9c" />
-Le informazioni dell'utente del tipo : chat, immagine profilo ecc... Sono stati ideati per un'ottimizzazione ottimale per server di bassa/media potenza che hanno poco storage.
+Le informazioni dell'utente del tipo : chat, immagine profilo ecc... Sono stati ideati per un'ottimizzazione per server di bassa/media potenza che hanno poco storage.
 
 Listo qui tutte le features funzionanti:
 Mandare-Ricevere messaggi, fare un account, accedere all'account, modificare username, modificare password, modificare pfp (profile picture),aggiungere amici.
