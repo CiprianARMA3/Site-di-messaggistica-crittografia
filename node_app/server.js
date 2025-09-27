@@ -259,7 +259,7 @@ app.post("/settings/username", requireAuth, (req, res) => {
 //   } catch (err) {
 //     console.error("Error sending message:", err);
 //     res.status(500).json({ error: "Failed to send message" });
-//   }
+// //   }
 //   const sockets = userSockets.get(String(friendId));
 //     if (sockets) {
 //       for (const sid of sockets) {
@@ -832,9 +832,16 @@ const io = new Server(server, {
 const activeSockets = new Map();
 // Instead of one socket per user, allow multiple sockets
 const userSockets = new Map();
+
+function broadcastOnlineUsers() {
+  const onlineIds = Array.from(userSockets.keys());
+  io.emit("online_users", onlineIds); // send full state to ALL clients
+}
+
 const disconnectTimers = new Map();
 
-io.on("connection", (socket) => {
+io.on("connect", (socket) => { 
+  // fix connection
   console.log("🔌 New socket connected:", socket.id);
 
   socket.on("auth", ({ userId }) => {
@@ -855,10 +862,35 @@ io.on("connection", (socket) => {
       userOnline(uid);
       io.emit("user_online", uid);
       console.log(`✅ User ${uid} is now ONLINE`);
+      broadcastOnlineUsers();
     } else {
       console.log(`User ${uid} opened another tab (total: ${count + 1})`);
     }
   });
+  function broadcastOnlineUsers() {
+  const onlineIds = Array.from(userSockets.keys()).map(String);
+  io.emit("online_users", onlineIds);
+}
+
+  socket.on("user_online", (uid) => {
+  console.log("➡️ user_online", uid);
+  updateFriendStatus(uid, true);
+});
+
+socket.on("user_offline", (uid) => {
+  console.log("➡️ user_offline", uid);
+  updateFriendStatus(uid, false);
+});
+
+socket.on("online_users", (ids) => {
+  console.log("📡 Full online list:", ids);
+
+  // First mark everyone offline
+  friends.forEach(friend => updateFriendStatus(friend._id, false));
+
+  // Then mark only the ones actually online
+  ids.forEach(uid => updateFriendStatus(uid, true));
+});
 
   socket.on("disconnect", () => {
     const uid = socket.data.userId;
@@ -874,6 +906,7 @@ io.on("connection", (socket) => {
         io.emit("user_offline", uid);
         disconnectTimers.delete(uid);
         console.log(`❌ User ${uid} is now OFFLINE`);
+        broadcastOnlineUsers();
       }, 2000));
 
     } else {

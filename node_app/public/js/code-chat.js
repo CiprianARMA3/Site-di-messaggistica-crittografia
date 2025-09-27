@@ -244,7 +244,7 @@ if (modalSubmit) {
       }
     } else {
       // clear chat view when no friends
-      if (chatView) chatView.innerHTML = `<p class="empty">Select a user to chat with</p>`;
+      if (chatView) chatView.innerHTML = `<p class="empty"></p>`;
     }
   } catch (err) {
     console.error("loadFriends error", err);

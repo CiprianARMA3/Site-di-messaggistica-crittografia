@@ -74,8 +74,14 @@
         "id": 9,
         "username": "ciprian1010",
         "pfp": "/images/icon-user.png"
+      },
+      {
+        "id": 10,
+        "username": "DummyTest2",
+        "pfp": "/images/icon-user.png"
       }
-    ]
+    ],
+    "requests": []
   },
   "6": {
     "username": "testetst",
@@ -117,5 +123,18 @@
       }
     ],
     "requests": []
+  },
+  "10": {
+    "username": "DummyTest2",
+    "pfp": "/images/icon-user.png",
+    "pfpChanges": [],
+    "lastUsernameChange": 0,
+    "friends": [
+      {
+        "id": 5,
+        "username": "ciprian001",
+        "pfp": "/user-images/68f91520550f31675bc1f0f5.jpg"
+      }
+    ]
   }
 }
