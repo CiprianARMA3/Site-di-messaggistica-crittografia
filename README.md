@@ -1,4 +1,4 @@
-# Sito di messaggistica con crittografia aes256
+# Sito di messaggistica con crittografia AES256
 
  Il sito in questione è stato fatto all'incirca in 1 mese, i linguatti che sono stati utiilizzati sono : HTML,CSS,JavaScript,Node.js, SQL, NoSql.
  Ogni messaggio mandato viene salvato in una cartella il cui nome è encriptato , i contenuti (messaggi) sono suddivisi per periodi di 15 giorni;
