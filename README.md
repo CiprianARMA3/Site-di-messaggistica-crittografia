@@ -1,16 +1,27 @@
 # Sito di messaggistica con crittografia AES256
 
- Il sito in questione è stato fatto all'incirca in 1 mese, i linguaggii che sono stati utiilizzati sono : HTML,CSS,JavaScript,Node.js, SQL, NoSql.
+ Il sito in questione è stato fatto all'incirca in 20 giorni, i linguaggii che sono stati utiilizzati sono : HTML,CSS,JavaScript,Node.js, SQL, NoSql.
  Ogni messaggio mandato viene salvato in una cartella il cui nome è encriptato , i contenuti (messaggi) sono suddivisi per periodi di 15 giorni;
  Il funzionamento è basilare, mancano molte funzioni.
- Questo è stato il mio primo progetto completo con Node.JS e SQL.
- Prossimamente farò una versione più completa utilizzando Ruby on Rails ( nota come Rails) , mySQL (che alla fine è SQL) , noSQL, React; 
+ Questo è stato il mio primo progetto  con Node.JS e SQL, linguaggi a me nuovi.
+ Il sito l'ho ideato mettendo ciò che essenziale per un sito di questo tipo: pagina home, pagina about-us, pagina contact , una pagina settings e le pagine di login e register che sono funzionanti;
+ Non l'ho fatto per essere hostato su server, l'ho fatto solamente per imparare il funzionamento di node, sql e nosql;
+ 
+ **Prossimamente farò una versione più completa utilizzando Electron, Vite,React (JSX che è JavaScript XML e non TSX che è TypeScript ), Tailwind, mySQL (oppure MariaDB) e MongoDB ( per NoSql);**
+ Ecco il link del progetto in corso: https://github.com/CiprianARMA3/App-Messaggi-Multiplatform-encryptAES256; 
+ L'obiettivo del progetto appena linkato è quello di creare un'API multipiattaforma ed utilizzando React e Tailwind, portarlo anche su versione mobile.
+
  
 Database è composto così:
 ![database-sample](https://github.com/user-attachments/assets/e0420aca-06f4-47b7-abdc-1b219c92af3b)
 
 Il funzionamento del decrypt /encrypt è dipendente dall' .env che contiene le chiavi di encripzione in AES256;
-Aggiunti commenti con l'intelligenza artificiale per una migliore lettura del codice da terze parti.
+esempio:
+```
+SECRET_KEY=vBxR6wHZzVDPxQnR05hyXVf8L4Os5Lq5wfsZqsi9t58=
+
+```
+Aggiunti commenti con l'intelligenza artificiale per una migliore lettura del codice da terze parti!!
 
 <img width="1920" height="1080" alt="Funzionamento DB" src="https://github.com/user-attachments/assets/bd6ac958-83bb-4fa3-baf7-b97383f3e7d1" />
 
@@ -31,7 +42,6 @@ Ecco tutte le immagini del sito in caso non potete esegure ("node server.js"):
 <img width="1920" height="1080" alt="Screenshot_2025-09-27_10_54_52" src="https://github.com/user-attachments/assets/496985d5-5dd8-4b44-93c6-b754d5806469" />
 <img width="1920" height="1080" alt="Screenshot_2025-09-27_10_55_09" src="https://github.com/user-attachments/assets/3ea0094b-9b7e-4a7e-8877-12f99cf180aa" />
 <img width="1920" height="1080" alt="Screenshot_2025-09-27_10_55_20" src="https://github.com/user-attachments/assets/aa793990-3269-42c9-852f-9b0e255bdbd7" />
-<img width="1920" height="1080" alt="Screenshot_2025-09-27_10_55_32" src="https://github.com/user-attachments/assets/b6dad4d9-ab7b-45f8-b25c-4d6f6c2e5083" />
 <img width="1920" height="1080" alt="Screenshot_2025-09-27_10_57_02" src="https://github.com/user-attachments/assets/44f04171-f6ce-4d73-879a-85a57d2bcc63" />
 <img width="1920" height="1080" alt="Screenshot_2025-09-27_10_57_19" src="https://github.com/user-attachments/assets/3474c635-d258-437e-8bdd-4098608e1377" />
 <img width="1920" height="1080" alt="Screenshot_2025-09-27_10_57_30" src="https://github.com/user-attachments/assets/bcacd982-6052-4264-99da-4f91d9e650e9" />
