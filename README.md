@@ -1,6 +1,6 @@
 # Sito di messaggistica con crittografia AES256
 
- Il sito in questione è stato fatto all'incirca in 1 mese, i linguatti che sono stati utiilizzati sono : HTML,CSS,JavaScript,Node.js, SQL, NoSql.
+ Il sito in questione è stato fatto all'incirca in 1 mese, i linguaggii che sono stati utiilizzati sono : HTML,CSS,JavaScript,Node.js, SQL, NoSql.
  Ogni messaggio mandato viene salvato in una cartella il cui nome è encriptato , i contenuti (messaggi) sono suddivisi per periodi di 15 giorni;
  Il funzionamento è basilare, mancano molte funzioni.
  Questo è stato il mio primo progetto completo con Node.JS e SQL.
@@ -10,7 +10,7 @@ Database è composto così:
 ![database-sample](https://github.com/user-attachments/assets/e0420aca-06f4-47b7-abdc-1b219c92af3b)
 
 Il funzionamento del decrypt /encrypt è dipendente dall' .env che contiene le chiavi di encripzione in AES256;
-Aggiunti commenti con l'intelligenza artificiale per una migliore lettura del codice da parte di terzi.
+Aggiunti commenti con l'intelligenza artificiale per una migliore lettura del codice da terze parti.
 
 <img width="1920" height="1080" alt="Funzionamento DB" src="https://github.com/user-attachments/assets/bd6ac958-83bb-4fa3-baf7-b97383f3e7d1" />
 
