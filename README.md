@@ -8,7 +8,9 @@
  Non l'ho fatto per essere hostato su server, l'ho fatto solamente per imparare il funzionamento di node, sql e nosql;
  
  **Prossimamente farò una versione più completa utilizzando Electron, Vite,React (JSX che è JavaScript XML e non TSX che è TypeScript ), Tailwind, mySQL (oppure MariaDB) e MongoDB ( per NoSql);**
+ 
  Ecco il link del progetto in corso: https://github.com/CiprianARMA3/App-Messaggi-Multiplatform-encryptAES256; 
+ 
  L'obiettivo del progetto appena linkato è quello di creare un'API multipiattaforma ed utilizzando React e Tailwind, portarlo anche su versione mobile.
 
  
